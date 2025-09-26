@@ -60,6 +60,47 @@ Make the character creative, unique, and engaging. Avoid clichés and create som
 };
 
 /**
+ * Generate a fallback character when AI generation fails
+ */
+function generateFallbackCharacter() {
+    const fallbackCharacters = [
+        {
+            name: "Luna Starweaver",
+            description: "A mysterious woman with silver hair and eyes that seem to hold the cosmos. She wears flowing robes adorned with celestial patterns and carries an ancient tome.",
+            personality: "Wise, mystical, and slightly enigmatic. Luna speaks in riddles and metaphors, always seeming to know more than she reveals.",
+            scenario: "Luna is a cosmic scholar who travels between dimensions, collecting knowledge from different realms. She's currently in a quiet library between worlds.",
+            first_mes: "*The silver-haired woman looks up from her ancient tome, eyes sparkling with starlight*\n\nAh, another seeker of knowledge has found their way to my sanctuary. Tell me, what mysteries do you wish to unravel?",
+            mes_example: "*She traces patterns in the air with her finger, leaving trails of starlight*\n\nThe universe speaks in patterns, dear one. Every question is a thread in the great tapestry of existence.",
+            tags: ["mystical", "wise", "cosmic", "scholar", "enigmatic"],
+            creator_notes: "AI-Generated Fallback Character: A cosmic scholar with mystical knowledge"
+        },
+        {
+            name: "Alex Chen",
+            description: "A young tech entrepreneur with messy hair and bright, curious eyes. Always wearing a hoodie and carrying multiple devices.",
+            personality: "Enthusiastic, innovative, and slightly chaotic. Alex is passionate about technology and solving problems with creative solutions.",
+            scenario: "Alex is working on a revolutionary AI project in their garage-turned-lab, surrounded by prototypes and energy drinks.",
+            first_mes: "*Looks up from a glowing screen, coffee in hand*\n\nOh hey! I was just debugging this neural network when you showed up. Want to see what I'm building?",
+            mes_example: "*Excitedly gestures at various gadgets*\n\nDude, you won't believe what I just figured out! This algorithm could change everything!",
+            tags: ["tech", "entrepreneur", "innovative", "young", "enthusiastic"],
+            creator_notes: "AI-Generated Fallback Character: A passionate tech entrepreneur"
+        },
+        {
+            name: "Captain Zara Voss",
+            description: "A seasoned space explorer with weathered features and a confident stance. Wears a practical flight suit with various tools and gadgets attached.",
+            personality: "Brave, resourceful, and slightly sarcastic. Zara has seen the galaxy and isn't easily impressed, but has a soft spot for those who show courage.",
+            scenario: "Zara is the captain of the starship 'Nebula Runner', currently docked at a space station for repairs and resupply.",
+            first_mes: "*Leans against the ship's console, arms crossed*\n\nWell, well. Another curious soul drawn to the stars. What brings you to my corner of the galaxy?",
+            mes_example: "*Chuckles while checking ship diagnostics*\n\nKid, I've seen black holes that were less dangerous than some of the situations I've been in. But hey, that's what makes life interesting.",
+            tags: ["space", "captain", "explorer", "brave", "experienced"],
+            creator_notes: "AI-Generated Fallback Character: A veteran space explorer"
+        }
+    ];
+
+    const randomIndex = Math.floor(Math.random() * fallbackCharacters.length);
+    return fallbackCharacters[randomIndex];
+}
+
+/**
  * Generate a random character using AI
  */
 export async function generateRandomCharacter() {
@@ -84,29 +125,35 @@ export async function generateRandomCharacter() {
 
         console.log('Calling AI generation...');
 
-        // Generate the character using AI
-        const aiResponse = await generateQuietPrompt({
-            quietPrompt: prompt,
-            quietToLoud: false,
-            skipWIAN: true,
-            responseLength: 2000,
-            jsonSchema: {
-                type: "object",
-                properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    personality: { type: "string" },
-                    scenario: { type: "string" },
-                    first_mes: { type: "string" },
-                    mes_example: { type: "string" },
-                    tags: { type: "array", items: { type: "string" } },
-                    creator_notes: { type: "string" }
-                },
-                required: ["name", "description", "personality", "scenario", "first_mes", "mes_example", "tags", "creator_notes"]
-            }
-        });
+        // Try AI generation first, with simpler prompt
+        let aiResponse;
+        try {
+            aiResponse = await generateQuietPrompt({
+                quietPrompt: `Create a unique character for an AI chat application. Respond with a JSON object containing: name, description, personality, scenario, first_mes, mes_example, tags (array), and creator_notes. Theme: ${randomTheme}`,
+                quietToLoud: false,
+                skipWIAN: true,
+                responseLength: 1500
+            });
+        } catch (aiError) {
+            console.warn('AI generation failed, using fallback:', aiError);
+            const fallbackData = generateFallbackCharacter();
+            const character = await createCharacterFromData(fallbackData);
+            showSurpriseSuccess(character.name);
+            return character;
+        }
 
         console.log('AI response received:', aiResponse);
+        console.log('AI response type:', typeof aiResponse);
+        console.log('AI response length:', aiResponse ? aiResponse.length : 'null/undefined');
+
+        // Handle empty or invalid responses
+        if (!aiResponse || aiResponse === '{}' || aiResponse.trim() === '') {
+            console.warn('AI returned empty response, using fallback character generation');
+            const characterData = generateFallbackCharacter();
+            const character = await createCharacterFromData(characterData);
+            showSurpriseSuccess(character.name);
+            return character;
+        }
 
         // Parse the AI response
         let characterData;
@@ -119,13 +166,21 @@ export async function generateRandomCharacter() {
             if (jsonMatch) {
                 characterData = JSON.parse(jsonMatch[0]);
             } else {
-                throw new Error('Could not parse character data from AI response');
+                console.warn('Could not parse character data from AI response, using fallback');
+                const fallbackData = generateFallbackCharacter();
+                const character = await createCharacterFromData(fallbackData);
+                showSurpriseSuccess(character.name);
+                return character;
             }
         }
 
         // Validate the character data
-        if (!characterData.name || !characterData.description) {
-            throw new Error('AI response missing required character fields');
+        if (!characterData || !characterData.name || !characterData.description) {
+            console.warn('AI response missing required character fields, using fallback');
+            const fallbackData = generateFallbackCharacter();
+            const character = await createCharacterFromData(fallbackData);
+            showSurpriseSuccess(character.name);
+            return character;
         }
 
         // Generate a random avatar using AI image generation (if available)
@@ -347,9 +402,6 @@ export function initSurpriseCharacterGenerator() {
     $(document).on('click', '#rm_button_surprise', async function(e) {
         e.preventDefault();
         console.log('Surprise button clicked!');
-
-        // Test if button click is working
-        showSurpriseSuccess('Button clicked! Testing...');
 
         try {
             await generateRandomCharacter();
