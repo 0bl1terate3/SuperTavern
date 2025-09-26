@@ -173,8 +173,11 @@ export async function generateRandomCharacter() {
             // Remove any leading/trailing whitespace and newlines
             cleanedResponse = cleanedResponse.trim();
 
-            // Try to find the first JSON object in the response
-            const jsonMatch = cleanedResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$)/);
+            // Remove any leading dots or other non-JSON characters
+            cleanedResponse = cleanedResponse.replace(/^[^\{]*/, '');
+
+            // Try to find the first complete JSON object in the response
+            const jsonMatch = cleanedResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$|\s*---)/);
             if (jsonMatch) {
                 cleanedResponse = jsonMatch[0];
             }
@@ -184,7 +187,10 @@ export async function generateRandomCharacter() {
         } catch (parseError) {
             console.warn('Failed to parse AI response as JSON, attempting to extract JSON from response:', parseError);
             // Try to extract the first JSON object from the response
-            const jsonMatch = aiResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$)/);
+            let fallbackResponse = aiResponse;
+            // Remove any leading dots or other non-JSON characters
+            fallbackResponse = fallbackResponse.replace(/^[^\{]*/, '');
+            const jsonMatch = fallbackResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$|\s*---)/);
             if (jsonMatch) {
                 try {
                     characterData = JSON.parse(jsonMatch[0]);
