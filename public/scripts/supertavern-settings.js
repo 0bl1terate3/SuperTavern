@@ -138,6 +138,27 @@ export function initializeSuperTavernUI() {
         }
     });
 
+    // Joke Generator Settings Visibility Toggle
+    const jokeEnabledCheckbox = panel.querySelector('input[data-supertavern-setting="jokeGenerator.enabled"]');
+    const jokeSettingsDiv = panel.querySelector('[data-supertavern-requires="jokeGenerator.enabled"]');
+    
+    if (jokeEnabledCheckbox && jokeSettingsDiv) {
+        // Function to toggle visibility
+        const toggleJokeSettings = () => {
+            if (jokeEnabledCheckbox.checked) {
+                jokeSettingsDiv.style.display = 'block';
+            } else {
+                jokeSettingsDiv.style.display = 'none';
+            }
+        };
+        
+        // Initial state
+        toggleJokeSettings();
+        
+        // Listen for changes
+        jokeEnabledCheckbox.addEventListener('change', toggleJokeSettings);
+    }
+
     render();
 }
 

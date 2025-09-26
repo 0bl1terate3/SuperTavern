@@ -6226,7 +6226,14 @@ body:not(.movingUI) .drawer-content.maximized {
     display: none;
 }
 
-[data-supertavern-requires="jokeGenerator.enabled"]:has(input[data-supertavern-setting="jokeGenerator.enabled"]:checked) {
+/* Show joke generator settings when enabled checkbox is checked */
+input[data-supertavern-setting="jokeGenerator.enabled"]:checked ~ [data-supertavern-requires="jokeGenerator.enabled"],
+input[data-supertavern-setting="jokeGenerator.enabled"]:checked + [data-supertavern-requires="jokeGenerator.enabled"] {
+    display: block;
+}
+
+/* Alternative selector for when the checkbox is checked */
+.joke-generator-enabled [data-supertavern-requires="jokeGenerator.enabled"] {
     display: block;
 }
 
