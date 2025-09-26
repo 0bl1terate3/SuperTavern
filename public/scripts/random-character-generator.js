@@ -5,6 +5,7 @@
 
 import { generateQuietPrompt } from '../script.js';
 import { getRequestHeaders } from '../script.js';
+import { getCharacters, select_rm_info } from '../script.js';
 
 /**
  * Character generation templates and prompts
@@ -324,23 +325,15 @@ async function createCharacterFromData(characterData, avatarUrl = null) {
         const avatarName = await response.text();
 
         console.log('Refreshing character list...');
-        
+
         // Follow the same pattern as the main character creation flow
-        if (window.getCharacters) {
-            console.log('Calling getCharacters()...');
-            await window.getCharacters();
-            console.log('getCharacters() completed');
-        } else {
-            console.warn('getCharacters function not found');
-        }
-        
+        console.log('Calling getCharacters()...');
+        await getCharacters();
+        console.log('getCharacters() completed');
+
         // Use the same select_rm_info call as the main character creation
-        if (window.select_rm_info) {
-            console.log('Calling select_rm_info for character creation...');
-            window.select_rm_info('char_create', avatarName);
-        } else {
-            console.warn('select_rm_info function not found');
-        }
+        console.log('Calling select_rm_info for character creation...');
+        select_rm_info('char_create', avatarName);
 
         return {
             name: characterData.name,
