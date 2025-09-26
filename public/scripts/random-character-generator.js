@@ -158,13 +158,42 @@ export async function generateRandomCharacter() {
         // Parse the AI response
         let characterData;
         try {
-            characterData = JSON.parse(aiResponse);
+            // First, try to clean the response by removing markdown code blocks
+            let cleanedResponse = aiResponse;
+
+            // Remove markdown code blocks if present
+            if (cleanedResponse.includes('```json')) {
+                cleanedResponse = cleanedResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+            }
+            if (cleanedResponse.includes('```')) {
+                cleanedResponse = cleanedResponse.replace(/```\s*/, '').replace(/```\s*$/, '');
+            }
+
+            // Remove any leading/trailing whitespace and newlines
+            cleanedResponse = cleanedResponse.trim();
+
+            // Try to find the JSON object in the response
+            const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                cleanedResponse = jsonMatch[0];
+            }
+
+            console.log('Cleaned response:', cleanedResponse);
+            characterData = JSON.parse(cleanedResponse);
         } catch (parseError) {
             console.warn('Failed to parse AI response as JSON, attempting to extract JSON from response:', parseError);
             // Try to extract JSON from the response if it's wrapped in other text
             const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
-                characterData = JSON.parse(jsonMatch[0]);
+                try {
+                    characterData = JSON.parse(jsonMatch[0]);
+                } catch (secondParseError) {
+                    console.warn('Could not parse character data from AI response, using fallback');
+                    const fallbackData = generateFallbackCharacter();
+                    const character = await createCharacterFromData(fallbackData);
+                    showSurpriseSuccess(character.name);
+                    return character;
+                }
             } else {
                 console.warn('Could not parse character data from AI response, using fallback');
                 const fallbackData = generateFallbackCharacter();
@@ -174,7 +203,7 @@ export async function generateRandomCharacter() {
             }
         }
 
-        // Validate the character data
+        // Validate and normalize the character data
         if (!characterData || !characterData.name || !characterData.description) {
             console.warn('AI response missing required character fields, using fallback');
             const fallbackData = generateFallbackCharacter();
@@ -183,11 +212,25 @@ export async function generateRandomCharacter() {
             return character;
         }
 
+        // Normalize the character data to match expected format
+        const normalizedData = {
+            name: characterData.name || 'Unknown Character',
+            description: characterData.description || 'A mysterious character',
+            personality: characterData.personality || 'Friendly and engaging',
+            scenario: characterData.scenario || 'A casual encounter',
+            first_mes: characterData.first_mes || 'Hello! Nice to meet you!',
+            mes_example: characterData.mes_example || (Array.isArray(characterData.mes) ? characterData.mes[0] : 'How are you doing today?'),
+            tags: Array.isArray(characterData.tags) ? characterData.tags : ['ai-generated', 'friendly'],
+            creator_notes: characterData.creator_notes || 'AI-Generated Character'
+        };
+
+        console.log('Normalized character data:', normalizedData);
+
         // Generate a random avatar using AI image generation (if available)
-        const avatarUrl = await generateCharacterAvatar(characterData);
+        const avatarUrl = await generateCharacterAvatar(normalizedData);
 
         // Create the character
-        const character = await createCharacterFromData(characterData, avatarUrl);
+        const character = await createCharacterFromData(normalizedData, avatarUrl);
 
         // Show success message
         showSurpriseSuccess(character.name);
