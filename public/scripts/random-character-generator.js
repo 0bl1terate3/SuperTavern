@@ -13,16 +13,16 @@ import { getCharacters, select_rm_info } from '../script.js';
 const CHARACTER_GENERATION_PROMPTS = {
     system: `You are a creative character designer for an AI chat application. Generate unique, interesting characters with diverse backgrounds, personalities, and appearances. Each character should be fully developed and ready for roleplay conversations.`,
 
-    main: `Create a unique character for an AI chat application. The character should be interesting, well-developed, and ready for roleplay conversations.
+    main: `Create a single, unique character for an AI chat application. The character should be interesting, well-developed, and ready for roleplay conversations.
 
 Requirements:
-- Create a character with a unique name, appearance, personality, and background
+- Create ONE character with a unique name, appearance, personality, and background
 - Make them interesting and engaging for conversations
 - Include diverse characteristics (age, gender, ethnicity, profession, etc.)
 - Give them a compelling backstory and motivations
 - Make their personality distinct and memorable
 
-Please respond with a JSON object containing the following fields:
+Respond with ONLY a single JSON object containing the following fields:
 {
     "name": "Character's full name",
     "description": "Physical description and appearance",
@@ -34,7 +34,7 @@ Please respond with a JSON object containing the following fields:
     "creator_notes": "Additional notes about the character"
 }
 
-Make the character creative, unique, and engaging. Avoid clichés and create someone truly interesting to talk to.`,
+CRITICAL: Respond with ONLY the JSON object. Do not include any other text, explanations, or multiple characters.`,
 
     themes: [
         "fantasy adventure",
@@ -173,8 +173,8 @@ export async function generateRandomCharacter() {
             // Remove any leading/trailing whitespace and newlines
             cleanedResponse = cleanedResponse.trim();
 
-            // Try to find the JSON object in the response
-            const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+            // Try to find the first JSON object in the response
+            const jsonMatch = cleanedResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$)/);
             if (jsonMatch) {
                 cleanedResponse = jsonMatch[0];
             }
@@ -183,8 +183,8 @@ export async function generateRandomCharacter() {
             characterData = JSON.parse(cleanedResponse);
         } catch (parseError) {
             console.warn('Failed to parse AI response as JSON, attempting to extract JSON from response:', parseError);
-            // Try to extract JSON from the response if it's wrapped in other text
-            const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+            // Try to extract the first JSON object from the response
+            const jsonMatch = aiResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$)/);
             if (jsonMatch) {
                 try {
                     characterData = JSON.parse(jsonMatch[0]);
