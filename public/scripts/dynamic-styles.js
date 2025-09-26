@@ -127,6 +127,12 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
             // If something like :focus-within or a more specific selector like `.blah:has(:focus-visible)` for elements inside,
             // it should be manually defined in CSS.
             const focusSelector = rule.selectorText.replace(/:hover/g, ':focus-visible');
+            
+            // Skip webkit scrollbar pseudo-elements as they don't support focus states
+            if (focusSelector.includes('::-webkit-scrollbar')) {
+                return;
+            }
+            
             let focusRule = `${focusSelector} { ${rule.style.cssText} }`;
 
             // Wrap the generated rule into the same @media/@supports/@container chain (if any)

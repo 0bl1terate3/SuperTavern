@@ -1,4 +1,4 @@
-import { generateQuietPrompt, getRequestHeaders } from './script.js';
+import { generateQuietPrompt, getRequestHeaders } from '../script.js';
 import { extension_settings } from './extensions.js';
 
 /**
@@ -56,7 +56,7 @@ Target: ${target}
 
 Generate a creative roast in the absurd comedy style:`;
 
-        const response = await generateQuietPrompt(prompt);
+        const response = await generateQuietPrompt({ quietPrompt: prompt });
         return response || "I'm having trouble thinking of a good roast right now. Try again!";
     } catch (error) {
         console.error('Error generating roast:', error);
@@ -82,7 +82,7 @@ Original text: "${text}"
 
 Make it absurd:`;
 
-        const response = await generateQuietPrompt(prompt);
+        const response = await generateQuietPrompt({ quietPrompt: prompt });
         return response || text; // Return original if generation fails
     } catch (error) {
         console.error('Error absurdifying text:', error);
@@ -108,7 +108,7 @@ Text: "${text}"
 
 Amplify the absurdity:`;
 
-        const response = await generateQuietPrompt(prompt);
+        const response = await generateQuietPrompt({ quietPrompt: prompt });
         return response || text; // Return original if generation fails
     } catch (error) {
         console.error('Error amplifying absurdity:', error);
@@ -134,7 +134,7 @@ Opponent: ${opponent}
 
 Start the joke battle with an opening line:`;
 
-        const response = await generateQuietPrompt(prompt);
+        const response = await generateQuietPrompt({ quietPrompt: prompt });
         return response || "Let's battle! 🔥";
     } catch (error) {
         console.error('Error starting joke battle:', error);
@@ -162,7 +162,7 @@ ${context ? `Context: ${context}` : ''}
 
 Generate a ${style} joke:`;
 
-        const response = await generateQuietPrompt(prompt);
+        const response = await generateQuietPrompt({ quietPrompt: prompt });
         return response || "I'm drawing a blank on jokes right now! 😅";
     } catch (error) {
         console.error('Error generating joke:', error);
@@ -227,7 +227,7 @@ export async function testJokeGenerator() {
         ];
 
         const randomPrompt = testPrompts[Math.floor(Math.random() * testPrompts.length)];
-        const response = await generateQuietPrompt(randomPrompt);
+        const response = await generateQuietPrompt({ quietPrompt: randomPrompt });
         return response || "Test joke generation successful! 🎉";
     } catch (error) {
         console.error('Error testing joke generator:', error);

@@ -137,7 +137,12 @@ async function getLocaleData(language) {
  * @param {string} language Language code
  */
 function findLang(language) {
-    const supportedLang = langs.find(x => x.lang === language);
+    let supportedLang = langs.find(x => x.lang === language);
+
+    // If exact match not found, try fallback for English variants
+    if (!supportedLang && language.startsWith('en')) {
+        supportedLang = langs.find(x => x.lang === 'en') || { lang: 'en', display: 'English' };
+    }
 
     if (!supportedLang && language !== 'en') {
         console.warn(`Unsupported language: ${language}`);

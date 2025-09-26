@@ -129,7 +129,7 @@ export function initializeSuperTavernUI() {
     // Joke Generator Test Button
     panel.querySelector('#joke-generator-test')?.addEventListener('click', async () => {
         try {
-            const { testJokeGenerator } = await import('/scripts/creative-joke-generator.js');
+            const { testJokeGenerator } = await import('./creative-joke-generator.js');
             const result = await testJokeGenerator();
             toastr.success(`Joke Generator Test: ${result}`);
         } catch (error) {
