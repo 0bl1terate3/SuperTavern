@@ -85,6 +85,23 @@ const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 const defaultToastPosition = 'toast-top-center';
 
+const UI_DENSITY_CLASSES = ['compact', 'cozy', 'spacious'];
+const DEFAULT_UI_DENSITY = 'cozy';
+const DEFAULT_CHAT_MESSAGE_GAP = 12;
+const CHAT_MESSAGE_GAP_MIN = 0;
+const CHAT_MESSAGE_GAP_MAX = 32;
+const DEFAULT_CHAT_BUBBLE_RADIUS = 18;
+const CHAT_BUBBLE_RADIUS_MIN = 6;
+const CHAT_BUBBLE_RADIUS_MAX = 32;
+
+function clampNumber(value, min, max) {
+    if (!Number.isFinite(value)) {
+        return min;
+    }
+
+    return Math.min(Math.max(value, min), max);
+}
+
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
@@ -198,6 +215,13 @@ export const power_user = {
     hideChatAvatars_enabled: false,
     max_context_unlocked: false,
     message_token_count_enabled: false,
+    ui_density: DEFAULT_UI_DENSITY,
+    chat_message_gap: DEFAULT_CHAT_MESSAGE_GAP,
+    chat_bubble_radius: DEFAULT_CHAT_BUBBLE_RADIUS,
+    ui_message_dividers: false,
+    ui_accent_glow: false,
+    ui_focus_highlights: true,
+    ui_glass_panels: false,
     expand_message_actions: false,
     enableZenSliders: false,
     enableLabMode: false,
@@ -1092,6 +1116,58 @@ function applyChatWidth(type) {
     $('#chat_width_slider_counter').val(power_user.chat_width);
 }
 
+function applyUIDensity() {
+    if (!UI_DENSITY_CLASSES.includes(power_user.ui_density)) {
+        power_user.ui_density = DEFAULT_UI_DENSITY;
+    }
+
+    const densityClasses = UI_DENSITY_CLASSES.map(value => `ui-density-${value}`);
+    $('body').removeClass(densityClasses.join(' '));
+    $('body').addClass(`ui-density-${power_user.ui_density}`);
+    $('#ui_density').val(power_user.ui_density);
+}
+
+function applyChatMessageGap() {
+    const gap = clampNumber(Number(power_user.chat_message_gap ?? DEFAULT_CHAT_MESSAGE_GAP), CHAT_MESSAGE_GAP_MIN, CHAT_MESSAGE_GAP_MAX);
+    power_user.chat_message_gap = gap;
+    document.documentElement.style.setProperty('--chatMessageGap', `${gap}px`);
+    $('#chat_message_gap').val(gap);
+    $('#chat_message_gap_counter').val(gap);
+}
+
+function applyChatBubbleRadius() {
+    const radius = clampNumber(Number(power_user.chat_bubble_radius ?? DEFAULT_CHAT_BUBBLE_RADIUS), CHAT_BUBBLE_RADIUS_MIN, CHAT_BUBBLE_RADIUS_MAX);
+    power_user.chat_bubble_radius = radius;
+    document.documentElement.style.setProperty('--chatBubbleRadius', `${radius}px`);
+    $('#chat_bubble_radius').val(radius);
+    $('#chat_bubble_radius_counter').val(radius);
+}
+
+function switchUiMessageDividers() {
+    const enabled = !!power_user.ui_message_dividers;
+    $('body').toggleClass('ui-message-dividers', enabled);
+    $('#ui_message_dividers').prop('checked', enabled);
+}
+
+function switchUiAccentGlow() {
+    const enabled = !!power_user.ui_accent_glow;
+    $('body').toggleClass('ui-accent-glow', enabled);
+    $('#ui_accent_glow').prop('checked', enabled);
+}
+
+function switchUiFocusHighlights() {
+    const enabled = power_user.ui_focus_highlights ?? true;
+    $('body').toggleClass('ui-focus-highlights', enabled);
+    $('#ui_focus_highlights').prop('checked', enabled);
+    power_user.ui_focus_highlights = enabled;
+}
+
+function switchUiGlassPanels() {
+    const enabled = !!power_user.ui_glass_panels;
+    $('body').toggleClass('ui-glass-panels', enabled);
+    $('#ui_glass_panels').prop('checked', enabled);
+}
+
 function applyThemeColor(type) {
     if (type === 'main') {
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
@@ -1265,6 +1341,48 @@ function applyTheme(name) {
             },
         },
         {
+            key: 'ui_density',
+            action: () => {
+                applyUIDensity();
+            },
+        },
+        {
+            key: 'chat_message_gap',
+            action: () => {
+                applyChatMessageGap();
+            },
+        },
+        {
+            key: 'chat_bubble_radius',
+            action: () => {
+                applyChatBubbleRadius();
+            },
+        },
+        {
+            key: 'ui_message_dividers',
+            action: () => {
+                switchUiMessageDividers();
+            },
+        },
+        {
+            key: 'ui_accent_glow',
+            action: () => {
+                switchUiAccentGlow();
+            },
+        },
+        {
+            key: 'ui_focus_highlights',
+            action: () => {
+                switchUiFocusHighlights();
+            },
+        },
+        {
+            key: 'ui_glass_panels',
+            action: () => {
+                switchUiGlassPanels();
+            },
+        },
+        {
             key: 'timer_enabled',
             action: () => {
                 switchTimer();
@@ -1422,6 +1540,9 @@ export function applyPowerUserSettings() {
     applyBlurStrength();
     applyShadowWidth();
     applyCustomCSS();
+    applyUIDensity();
+    applyChatMessageGap();
+    applyChatBubbleRadius();
     switchMovingUI();
     applyNoShadows();
     switchHotswap();
@@ -1432,6 +1553,10 @@ export function applyPowerUserSettings() {
     switchHideChatAvatars();
     switchTokenCount();
     switchMessageActions();
+    switchUiMessageDividers();
+    switchUiAccentGlow();
+    switchUiFocusHighlights();
+    switchUiGlassPanels();
     switchSwipeNumAllMessages();
 }
 
@@ -1710,6 +1835,15 @@ export async function loadPowerUserSettings(settings, data) {
     $('#forbid_external_media').prop('checked', power_user.forbid_external_media);
     $('#pin_styles').prop('checked', power_user.pin_styles);
     $('#click_to_edit').prop('checked', power_user.click_to_edit);
+    $('#ui_density').val(power_user.ui_density ?? DEFAULT_UI_DENSITY);
+    $('#chat_message_gap').val(power_user.chat_message_gap ?? DEFAULT_CHAT_MESSAGE_GAP);
+    $('#chat_message_gap_counter').val(power_user.chat_message_gap ?? DEFAULT_CHAT_MESSAGE_GAP);
+    $('#chat_bubble_radius').val(power_user.chat_bubble_radius ?? DEFAULT_CHAT_BUBBLE_RADIUS);
+    $('#chat_bubble_radius_counter').val(power_user.chat_bubble_radius ?? DEFAULT_CHAT_BUBBLE_RADIUS);
+    $('#ui_message_dividers').prop('checked', power_user.ui_message_dividers ?? false);
+    $('#ui_accent_glow').prop('checked', power_user.ui_accent_glow ?? false);
+    $('#ui_focus_highlights').prop('checked', power_user.ui_focus_highlights ?? true);
+    $('#ui_glass_panels').prop('checked', power_user.ui_glass_panels ?? false);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -1729,6 +1863,13 @@ export async function loadPowerUserSettings(settings, data) {
 
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
+    applyUIDensity();
+    applyChatMessageGap();
+    applyChatBubbleRadius();
+    switchUiMessageDividers();
+    switchUiAccentGlow();
+    switchUiFocusHighlights();
+    switchUiGlassPanels();
     switchReducedMotion();
     switchCompactInputArea();
     reloadMarkdownProcessor();
@@ -2502,6 +2643,13 @@ function getThemeObject(name) {
         compact_input_area: power_user.compact_input_area,
         show_swipe_num_all_messages: power_user.show_swipe_num_all_messages,
         click_to_edit: power_user.click_to_edit,
+        ui_density: power_user.ui_density,
+        chat_message_gap: power_user.chat_message_gap,
+        chat_bubble_radius: power_user.chat_bubble_radius,
+        ui_message_dividers: power_user.ui_message_dividers,
+        ui_accent_glow: power_user.ui_accent_glow,
+        ui_focus_highlights: power_user.ui_focus_highlights,
+        ui_glass_panels: power_user.ui_glass_panels,
     };
 }
 
@@ -3469,6 +3617,73 @@ jQuery(() => {
         applyChatWidth(applyMode);
         saveSettingsDebounced();
         setHotswapsDebounced();
+    });
+
+    $('#ui_density').on('change', function () {
+        const value = String($(this).val());
+        power_user.ui_density = UI_DENSITY_CLASSES.includes(value) ? value : DEFAULT_UI_DENSITY;
+        applyUIDensity();
+        saveSettingsDebounced();
+    });
+
+    $('#chat_message_gap').on('input', function () {
+        const value = clampNumber(Number($(this).val()), CHAT_MESSAGE_GAP_MIN, CHAT_MESSAGE_GAP_MAX);
+        power_user.chat_message_gap = value;
+        applyChatMessageGap();
+        saveSettingsDebounced();
+    });
+
+    $('#chat_message_gap_counter').on('input', function () {
+        let value = Number($(this).val());
+        if (!Number.isFinite(value)) {
+            return;
+        }
+        value = clampNumber(value, CHAT_MESSAGE_GAP_MIN, CHAT_MESSAGE_GAP_MAX);
+        power_user.chat_message_gap = value;
+        applyChatMessageGap();
+        saveSettingsDebounced();
+    });
+
+    $('#chat_bubble_radius').on('input', function () {
+        const value = clampNumber(Number($(this).val()), CHAT_BUBBLE_RADIUS_MIN, CHAT_BUBBLE_RADIUS_MAX);
+        power_user.chat_bubble_radius = value;
+        applyChatBubbleRadius();
+        saveSettingsDebounced();
+    });
+
+    $('#chat_bubble_radius_counter').on('input', function () {
+        let value = Number($(this).val());
+        if (!Number.isFinite(value)) {
+            return;
+        }
+        value = clampNumber(value, CHAT_BUBBLE_RADIUS_MIN, CHAT_BUBBLE_RADIUS_MAX);
+        power_user.chat_bubble_radius = value;
+        applyChatBubbleRadius();
+        saveSettingsDebounced();
+    });
+
+    $('#ui_message_dividers').on('input', function () {
+        power_user.ui_message_dividers = !!$(this).prop('checked');
+        switchUiMessageDividers();
+        saveSettingsDebounced();
+    });
+
+    $('#ui_accent_glow').on('input', function () {
+        power_user.ui_accent_glow = !!$(this).prop('checked');
+        switchUiAccentGlow();
+        saveSettingsDebounced();
+    });
+
+    $('#ui_focus_highlights').on('input', function () {
+        power_user.ui_focus_highlights = !!$(this).prop('checked');
+        switchUiFocusHighlights();
+        saveSettingsDebounced();
+    });
+
+    $('#ui_glass_panels').on('input', function () {
+        power_user.ui_glass_panels = !!$(this).prop('checked');
+        switchUiGlassPanels();
+        saveSettingsDebounced();
     });
 
     $('#chat_truncation').on('input', function () {
