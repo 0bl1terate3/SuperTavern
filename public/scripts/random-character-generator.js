@@ -323,10 +323,42 @@ async function createCharacterFromData(characterData, avatarUrl = null) {
 
         const avatarName = await response.text();
 
-        // Refresh character list
+        // Refresh character list and UI
         if (window.getCharacters) {
             await window.getCharacters();
         }
+        
+        // Force UI refresh using the proper event system
+        if (window.eventSource && window.eventSource.emit) {
+            // Emit a character created event to trigger UI updates
+            window.eventSource.emit('CHARACTER_CREATED', { characterName: characterData.name });
+        }
+        
+        // Also try to trigger a character page refresh
+        if (window.printCharacters) {
+            window.printCharacters(true);
+        }
+        
+        // Try the debounced version as well
+        if (window.printCharactersDebounced) {
+            window.printCharactersDebounced();
+        }
+        
+        // Trigger a manual refresh of the character display as backup
+        setTimeout(() => {
+            if (window.getCharacters) {
+                window.getCharacters();
+            }
+        }, 1000);
+        
+        // Additional aggressive refresh attempts
+        setTimeout(() => {
+            // Try to trigger a character list refresh by simulating a menu change
+            if (window.selectRightMenuWithAnimation && window.setMenuType) {
+                window.setMenuType('characters');
+                window.selectRightMenuWithAnimation('rm_characters_block');
+            }
+        }, 1500);
 
         return {
             name: characterData.name,
