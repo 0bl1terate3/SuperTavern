@@ -6121,6 +6121,25 @@
                         <div id="charListFixedTop">
                             <div id="rm_button_bar">
                                 <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus"></div>
+                                <div id="rm_button_surprise" title="Surprise me! Generate a random AI character" data-i18n="[title]Surprise me! Generate a random AI character" class="menu_button fa-solid fa-wand-magic-sparkles surprise-button" style="position: relative;">
+                                    <span class="surprise-tooltip" style="
+                                        position: absolute;
+                                        bottom: 100%;
+                                        left: 50%;
+                                        transform: translateX(-50%);
+                                        background: rgba(0,0,0,0.8);
+                                        color: white;
+                                        padding: 8px 12px;
+                                        border-radius: 6px;
+                                        font-size: 12px;
+                                        white-space: nowrap;
+                                        opacity: 0;
+                                        pointer-events: none;
+                                        transition: opacity 0.3s ease;
+                                        z-index: 1000;
+                                        margin-bottom: 5px;
+                                    ">✨ AI Character Generator ✨</span>
+                                </div>
                                 <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import"></div>
                                 <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down"></div>
                                 <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear"></div>
@@ -7894,6 +7913,7 @@
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/i18n.js"></script>
     <script type="module" src="script.js"></script>
+    <script type="module" src="scripts/random-character-generator.js"></script>
     <script>
         const initializeSuperTavernLayout = () => {
             const documentHeight = () => {
