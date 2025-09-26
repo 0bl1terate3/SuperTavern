@@ -3008,6 +3008,108 @@ export function initDefaultSlashCommands() {
     }));
 
     registerVariableCommands();
+
+    // Creative Joke Generator Commands
+    registerJokeGeneratorCommands();
+}
+
+/**
+ * Register Creative Joke Generator slash commands
+ */
+function registerJokeGeneratorCommands() {
+    // Import joke generator functions
+    const jokeGenerator = {
+        generateRoast: async (target) => {
+            const { generateRoast } = await import('./creative-joke-generator.js');
+            return await generateRoast(target);
+        },
+        absurdifyText: async (text) => {
+            const { absurdifyText } = await import('./creative-joke-generator.js');
+            return await absurdifyText(text);
+        },
+        amplifyAbsurdity: async (text) => {
+            const { amplifyAbsurdity } = await import('./creative-joke-generator.js');
+            return await amplifyAbsurdity(text);
+        },
+        startJokeBattle: async (opponent) => {
+            const { startJokeBattle } = await import('./creative-joke-generator.js');
+            return await startJokeBattle(opponent);
+        },
+        generateJoke: async (style, context) => {
+            const { generateJoke } = await import('./creative-joke-generator.js');
+            return await generateJoke(style, context);
+        },
+        testJokeGenerator: async () => {
+            const { testJokeGenerator } = await import('./creative-joke-generator.js');
+            return await testJokeGenerator();
+        }
+    };
+
+    // /roast command - Generate creative roasts
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'roast',
+        callback: async (args, target) => {
+            const roastTarget = target || args?.target || 'yourself';
+            return await jokeGenerator.generateRoast(roastTarget);
+        },
+        helpString: 'Generate a creative roast in your style. Usage: /roast [target]',
+        aliases: ['roastme', 'burn']
+    }));
+
+    // /absurdify command - Make text absurd
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'absurdify',
+        callback: async (args, text) => {
+            const textToAbsurdify = text || args?.text || 'this message';
+            return await jokeGenerator.absurdifyText(textToAbsurdify);
+        },
+        helpString: 'Make any text absurd and hilarious. Usage: /absurdify [text]',
+        aliases: ['absurd', 'weirdify']
+    }));
+
+    // /amplify command - Amplify absurdity
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'amplify',
+        callback: async (args, text) => {
+            const textToAmplify = text || args?.text || 'this message';
+            return await jokeGenerator.amplifyAbsurdity(textToAmplify);
+        },
+        helpString: 'Amplify the absurdity of any text to maximum hilarity. Usage: /amplify [text]',
+        aliases: ['amp', 'escalate']
+    }));
+
+    // /jokebattle command - Start joke battle
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'jokebattle',
+        callback: async (args, opponent) => {
+            const battleOpponent = opponent || args?.opponent || 'the AI';
+            return await jokeGenerator.startJokeBattle(battleOpponent);
+        },
+        helpString: 'Start a joke battle with another character. Usage: /jokebattle [opponent]',
+        aliases: ['battle', 'jokewar']
+    }));
+
+    // /joke command - Generate jokes in specific style
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'joke',
+        callback: async (args, style) => {
+            const jokeStyle = style || args?.style || 'roast';
+            const context = args?.context || '';
+            return await jokeGenerator.generateJoke(jokeStyle, context);
+        },
+        helpString: 'Generate jokes in specific style. Usage: /joke [style] [context]. Styles: roast, absurd, wordplay, situational',
+        aliases: ['funny', 'comedy']
+    }));
+
+    // /testjoke command - Test joke generator
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'testjoke',
+        callback: async () => {
+            return await jokeGenerator.testJokeGenerator();
+        },
+        helpString: 'Test the joke generator with a sample joke',
+        aliases: ['joketest']
+    }));
 }
 
 const NARRATOR_NAME_KEY = 'narrator_name';

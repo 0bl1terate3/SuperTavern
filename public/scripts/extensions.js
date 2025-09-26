@@ -231,6 +231,16 @@ export const extension_settings = {
         /** @type {string} */
         sort: 'dateAsc',
     },
+    jokeGenerator: {
+        enabled: false,
+        intensity: 'medium',
+        defaultStyle: 'roast',
+        autoAbsurdify: false,
+        characterSpecific: false,
+        customPrompts: {},
+        favoriteJokes: [],
+        jokeHistory: []
+    },
 };
 
 function showHideExtensionsMenu() {

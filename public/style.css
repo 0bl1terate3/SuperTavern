@@ -6220,3 +6220,180 @@ body:not(.movingUI) .drawer-content.maximized {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
 }
+
+/* Creative Joke Generator Styles */
+[data-supertavern-requires="jokeGenerator.enabled"] {
+    display: none;
+}
+
+[data-supertavern-requires="jokeGenerator.enabled"]:has(input[data-supertavern-setting="jokeGenerator.enabled"]:checked) {
+    display: block;
+}
+
+.joke-generator-button {
+    background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+    background-size: 300% 300%;
+    animation: jokeGradient 3s ease infinite;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    filter: grayscale(0);
+}
+
+.joke-generator-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    animation-duration: 1s;
+}
+
+.joke-generator-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.joke-generator-button i {
+    margin-right: 8px;
+}
+
+@keyframes jokeGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.joke-intensity-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.joke-intensity-mild {
+    background-color: #4CAF50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+}
+
+.joke-intensity-medium {
+    background-color: #FF9800;
+    box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+}
+
+.joke-intensity-extreme {
+    background-color: #F44336;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.5);
+}
+
+/* Joke Generator Settings Panel */
+#joke-intensity, #joke-style {
+    background: var(--SmartThemeBodyBg, #1e1e1e);
+    border: 1px solid var(--SmartThemeBorder, #444);
+    border-radius: 4px;
+    color: var(--SmartThemeBodyColor, #ffffff);
+    padding: 4px 8px;
+    margin: 4px 0;
+}
+
+#joke-intensity:focus, #joke-style:focus {
+    outline: 2px solid var(--accent-color, #4ecdc4);
+    outline-offset: 2px;
+}
+
+/* Joke Generator Test Button Animation */
+.joke-generator-button.loading {
+    animation: jokeGradient 0.5s ease infinite;
+    pointer-events: none;
+}
+
+.joke-generator-button.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Joke Generator Status Indicators */
+.joke-generator-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.joke-generator-status.enabled {
+    background-color: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    border: 1px solid #4CAF50;
+}
+
+.joke-generator-status.disabled {
+    background-color: rgba(244, 67, 54, 0.2);
+    color: #F44336;
+    border: 1px solid #F44336;
+}
+
+/* Joke Generator Tooltip */
+.joke-generator-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.joke-generator-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+}
+
+.joke-generator-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Joke Generator Message Styling */
+.joke-generated-message {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+    border-left: 4px solid #4ecdc4;
+    padding: 8px 12px;
+    margin: 4px 0;
+    border-radius: 4px;
+    font-style: italic;
+}
+
+.joke-generated-message::before {
+    content: "🎭 ";
+    margin-right: 4px;
+}
+
+/* Joke Generator Slash Command Styling */
+.slash-command-joke {
+    color: #4ecdc4;
+    font-weight: 600;
+}
+
+.slash-command-joke::before {
+    content: "🎭 ";
+    margin-right: 4px;
+}

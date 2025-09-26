@@ -41,6 +41,16 @@ const DEFAULT_SETTINGS = {
     customization: {
         dynamicThemes: false,
     },
+    jokeGenerator: {
+        enabled: false,
+        intensity: 'medium',
+        defaultStyle: 'roast',
+        autoAbsurdify: false,
+        characterSpecific: false,
+        customPrompts: {},
+        favoriteJokes: [],
+        jokeHistory: []
+    },
 };
 
 const CROSS_TALK_REGEX = /^\/([^\s]+)\s+([\s\S]+)$/;
@@ -115,6 +125,18 @@ export function initializeSuperTavernUI() {
 
     panel.querySelector('#supertavern-shared-memory-export')?.addEventListener('click', exportSharedMemorySnapshot);
     panel.querySelector('#supertavern-shared-memory-clear')?.addEventListener('click', clearSharedMemory);
+
+    // Joke Generator Test Button
+    panel.querySelector('#joke-generator-test')?.addEventListener('click', async () => {
+        try {
+            const { testJokeGenerator } = await import('./creative-joke-generator.js');
+            const result = await testJokeGenerator();
+            toastr.success(`Joke Generator Test: ${result}`);
+        } catch (error) {
+            console.error('Joke generator test failed:', error);
+            toastr.error('Joke generator test failed!');
+        }
+    });
 
     render();
 }

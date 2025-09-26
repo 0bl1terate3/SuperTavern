@@ -4958,6 +4958,48 @@
                         </label>
                     </div>
                     <div class="flex-container flexFlowColumn">
+                        <h3>Creative Joke Generator</h3>
+                        <p>Generate absurd roasts, creative jokes, and amplify humor with AI-powered tools.</p>
+                        <label class="checkbox_label">
+                            <input type="checkbox" data-supertavern-setting="jokeGenerator.enabled">
+                            <small>Enable Creative Joke Generator</small>
+                        </label>
+                        <div data-supertavern-requires="jokeGenerator.enabled">
+                            <label class="checkbox_label">
+                                <input type="checkbox" data-supertavern-setting="jokeGenerator.autoAbsurdify">
+                                <small>Auto-absurdify messages in chat</small>
+                            </label>
+                            <div>
+                                <label for="joke-intensity">Joke Intensity</label>
+                                <select id="joke-intensity" data-supertavern-setting="jokeGenerator.intensity">
+                                    <option value="mild">Mild (Family Friendly)</option>
+                                    <option value="medium">Medium (Playful Roasts)</option>
+                                    <option value="extreme">Extreme (Absurd Comedy)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="joke-style">Default Joke Style</label>
+                                <select id="joke-style" data-supertavern-setting="jokeGenerator.defaultStyle">
+                                    <option value="roast">Roast Battle</option>
+                                    <option value="absurd">Absurd Comedy</option>
+                                    <option value="wordplay">Wordplay & Puns</option>
+                                    <option value="situational">Situational Comedy</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="jokeGenerator.characterSpecific">
+                                    <small>Character-specific joke styles</small>
+                                </label>
+                            </div>
+                            <div>
+                                <button type="button" id="joke-generator-test" class="menu_button joke-generator-button">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Test Joke Generator
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-container flexFlowColumn">
                         <h3>Advanced Customization</h3>
                         <p>Drive dynamic themes and procedural layouts that respond to collaboration.</p>
                         <label class="checkbox_label">

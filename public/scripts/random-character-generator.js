@@ -285,7 +285,7 @@ async function generateCharacterAvatar(characterData) {
 async function createCharacterFromData(characterData, avatarUrl = null) {
     try {
         console.log('Creating character from data:', characterData.name);
-        
+
         // Prepare the character data in the format SuperTavern expects
         const characterPayload = {
             ch_name: characterData.name,
