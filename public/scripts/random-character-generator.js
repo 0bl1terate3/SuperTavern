@@ -285,10 +285,10 @@ async function generateCharacterAvatar(characterData) {
 async function createCharacterFromData(characterData, avatarUrl = null) {
     try {
         console.log('Creating character from data:', characterData.name);
-
-        // Prepare the character data for SuperTavern
+        
+        // Prepare the character data in the format SuperTavern expects
         const characterPayload = {
-            name: characterData.name,
+            ch_name: characterData.name,
             description: characterData.description,
             personality: characterData.personality,
             scenario: characterData.scenario,
@@ -296,7 +296,9 @@ async function createCharacterFromData(characterData, avatarUrl = null) {
             mes_example: characterData.mes_example,
             tags: characterData.tags,
             creator_notes: characterData.creator_notes,
-            avatar: avatarUrl || 'default'
+            talkativeness: 0.5,
+            fav: false,
+            creator: 'SuperTavern Random Generator'
         };
 
         // Create the character via API
@@ -313,7 +315,7 @@ async function createCharacterFromData(characterData, avatarUrl = null) {
             throw new Error(`Failed to create character: ${response.statusText}`);
         }
 
-        const result = await response.json();
+        const result = await response.text();
         console.log('Character created successfully:', result);
 
         // Refresh the character list
