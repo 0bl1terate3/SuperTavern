@@ -129,7 +129,7 @@ export function initializeSuperTavernUI() {
     // Joke Generator Test Button
     panel.querySelector('#joke-generator-test')?.addEventListener('click', async () => {
         try {
-            const { testJokeGenerator } = await import('./creative-joke-generator.js');
+            const { testJokeGenerator } = await import('/scripts/creative-joke-generator.js');
             const result = await testJokeGenerator();
             toastr.success(`Joke Generator Test: ${result}`);
         } catch (error) {
@@ -141,7 +141,7 @@ export function initializeSuperTavernUI() {
     // Joke Generator Settings Visibility Toggle
     const jokeEnabledCheckbox = panel.querySelector('input[data-supertavern-setting="jokeGenerator.enabled"]');
     const jokeSettingsDiv = panel.querySelector('[data-supertavern-requires="jokeGenerator.enabled"]');
-    
+
     if (jokeEnabledCheckbox && jokeSettingsDiv) {
         // Function to toggle visibility
         const toggleJokeSettings = () => {
@@ -151,10 +151,10 @@ export function initializeSuperTavernUI() {
                 jokeSettingsDiv.style.display = 'none';
             }
         };
-        
+
         // Initial state
         toggleJokeSettings();
-        
+
         // Listen for changes
         jokeEnabledCheckbox.addEventListener('change', toggleJokeSettings);
     }

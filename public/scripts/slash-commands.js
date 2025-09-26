@@ -3020,27 +3020,27 @@ function registerJokeGeneratorCommands() {
     // Import joke generator functions
     const jokeGenerator = {
         generateRoast: async (target) => {
-            const { generateRoast } = await import('./creative-joke-generator.js');
+            const { generateRoast } = await import('/scripts/creative-joke-generator.js');
             return await generateRoast(target);
         },
         absurdifyText: async (text) => {
-            const { absurdifyText } = await import('./creative-joke-generator.js');
+            const { absurdifyText } = await import('/scripts/creative-joke-generator.js');
             return await absurdifyText(text);
         },
         amplifyAbsurdity: async (text) => {
-            const { amplifyAbsurdity } = await import('./creative-joke-generator.js');
+            const { amplifyAbsurdity } = await import('/scripts/creative-joke-generator.js');
             return await amplifyAbsurdity(text);
         },
         startJokeBattle: async (opponent) => {
-            const { startJokeBattle } = await import('./creative-joke-generator.js');
+            const { startJokeBattle } = await import('/scripts/creative-joke-generator.js');
             return await startJokeBattle(opponent);
         },
         generateJoke: async (style, context) => {
-            const { generateJoke } = await import('./creative-joke-generator.js');
+            const { generateJoke } = await import('/scripts/creative-joke-generator.js');
             return await generateJoke(style, context);
         },
         testJokeGenerator: async () => {
-            const { testJokeGenerator } = await import('./creative-joke-generator.js');
+            const { testJokeGenerator } = await import('/scripts/creative-joke-generator.js');
             return await testJokeGenerator();
         }
     };
