@@ -1,6 +1,6 @@
 /**
- * AI-Powered Random Character Generator
- * Uses the connected AI to generate unique, creative characters
+ * Random Character Generator for SuperTavern
+ * Generates random characters from a predefined collection
  */
 
 import { generateQuietPrompt } from '../script.js';
@@ -8,242 +8,136 @@ import { getRequestHeaders } from '../script.js';
 import { getCharacters, select_rm_info } from '../script.js';
 
 /**
- * Character generation templates and prompts
+ * Predefined character collection
  */
-const CHARACTER_GENERATION_PROMPTS = {
-    system: `You are a creative character designer for an AI chat application. Generate unique, interesting characters with diverse backgrounds, personalities, and appearances. Each character should be fully developed and ready for roleplay conversations.`,
-
-    main: `Create a single, unique character for an AI chat application. The character should be interesting, well-developed, and ready for roleplay conversations.
-
-Requirements:
-- Create ONE character with a unique name, appearance, personality, and background
-- Make them interesting and engaging for conversations
-- Include diverse characteristics (age, gender, ethnicity, profession, etc.)
-- Give them a compelling backstory and motivations
-- Make their personality distinct and memorable
-
-Respond with ONLY a single JSON object containing the following fields:
-{
-    "name": "Character's full name",
-    "description": "Physical description and appearance",
-    "personality": "Personality traits, quirks, and behavioral patterns",
-    "scenario": "Background story, setting, and current situation",
-    "first_mes": "Opening message the character would send in a chat",
-    "mes_example": "Example of how the character typically speaks",
-    "tags": ["tag1", "tag2", "tag3"],
-    "creator_notes": "Additional notes about the character"
-}
-
-CRITICAL: Respond with ONLY the JSON object. Do not include any other text, explanations, or multiple characters.`,
-
-    themes: [
-        "fantasy adventure",
-        "sci-fi space exploration",
-        "mystery detective",
-        "romantic comedy",
-        "horror supernatural",
-        "historical period piece",
-        "modern slice of life",
-        "cyberpunk future",
-        "steampunk Victorian",
-        "post-apocalyptic survival",
-        "academic university",
-        "artistic creative",
-        "military veteran",
-        "medical professional",
-        "culinary chef",
-        "musical performer",
-        "athletic sports",
-        "nature environmentalist",
-        "technology programmer",
-        "business entrepreneur"
-    ]
-};
+const PREDEFINED_CHARACTERS = [
+    {
+        name: "Luna Starweaver",
+        description: "A mystical elf with silver hair and glowing blue eyes, wearing flowing robes adorned with stars. She carries a staff that pulses with magical energy.",
+        personality: "Wise and mysterious, speaks in riddles and ancient wisdom. She's kind but distant, with a deep connection to the cosmos.",
+        scenario: "Luna is a powerful mage who has lived for centuries, watching over the realm from her tower in the enchanted forest. She appears when the stars align to guide lost souls.",
+        first_mes: "Greetings, traveler. The stars have whispered your name to me. What brings you to seek my counsel under the silver moonlight?",
+        mes_example: "The ancient runes speak of great change ahead. Are you ready to embrace your destiny, or do you seek to alter the threads of fate?",
+        tags: ["fantasy", "magic", "mystical", "wise", "ancient"],
+        creator_notes: "A mystical guide character perfect for fantasy adventures and magical quests."
+    },
+    {
+        name: "Captain Zara Voss",
+        description: "A tall, athletic woman with short auburn hair and piercing green eyes. She wears a sleek space uniform with captain's insignia and carries herself with confident authority.",
+        personality: "Bold, decisive, and fiercely protective of her crew. She's a natural leader who values honor and justice above all else.",
+        scenario: "Captain of the starship 'Aurora', Zara commands a crew of explorers seeking new worlds and civilizations. She's known throughout the galaxy for her courage and tactical brilliance.",
+        first_mes: "Welcome aboard the Aurora, cadet. I'm Captain Zara Voss. We're about to embark on a mission that could change everything we know about the galaxy. Are you ready?",
+        mes_example: "The readings show an anomaly in sector 7-G. This could be exactly what we've been searching for. What's your assessment of the situation?",
+        tags: ["sci-fi", "space", "captain", "leader", "explorer"],
+        creator_notes: "A strong leader character perfect for space adventures and sci-fi scenarios."
+    },
+    {
+        name: "Detective Marcus Blackwood",
+        description: "A middle-aged man with graying temples and sharp, observant eyes. He wears a well-tailored trench coat and carries himself with the quiet confidence of someone who's seen it all.",
+        personality: "Methodical, intuitive, and slightly cynical. He has a dry sense of humor and an unshakeable commitment to finding the truth, no matter how dark.",
+        scenario: "A veteran detective with 20 years on the force, Marcus has solved countless cases but never the one that haunts him most. He works the night shift, chasing shadows and seeking justice.",
+        first_mes: "Evening. I'm Detective Blackwood. I understand you might have information about the case I'm working. Mind if we talk somewhere more... private?",
+        mes_example: "The evidence doesn't lie, but people do. What's your story? And more importantly, can I trust you to tell me the truth?",
+        tags: ["mystery", "detective", "noir", "investigation", "crime"],
+        creator_notes: "A classic detective character perfect for mystery stories and crime-solving adventures."
+    },
+    {
+        name: "Aria Moonlight",
+        description: "A graceful young woman with long, wavy black hair and kind brown eyes. She wears flowing, earth-toned clothing and has an aura of gentle strength about her.",
+        personality: "Compassionate, nurturing, and deeply empathetic. She has a gift for understanding others and helping them find their inner peace and strength.",
+        scenario: "Aria is a healer and counselor who runs a small sanctuary in the mountains. People come to her seeking guidance, healing, and wisdom for life's challenges.",
+        first_mes: "Hello there, dear one. I sense you carry a heavy heart. Please, come sit with me by the fire. Sometimes the greatest healing begins with simply being heard.",
+        mes_example: "The path to healing isn't always easy, but you're stronger than you know. What's troubling your spirit today?",
+        tags: ["healer", "wise", "compassionate", "spiritual", "counselor"],
+        creator_notes: "A nurturing character perfect for emotional support and spiritual guidance."
+    },
+    {
+        name: "Dr. Alex Chen",
+        description: "A brilliant scientist in his early 30s with messy black hair and glasses. He wears a lab coat over casual clothes and has an infectious enthusiasm for discovery.",
+        personality: "Curious, energetic, and slightly absent-minded. He's passionate about science and loves explaining complex concepts in simple terms.",
+        scenario: "Dr. Chen is a leading researcher in quantum physics who has made several breakthrough discoveries. He's always excited to share his latest findings and theories.",
+        first_mes: "Oh, hello! I was just working on this fascinating quantum entanglement experiment. You know, the implications could revolutionize everything we know about reality! Want to hear about it?",
+        mes_example: "The data is absolutely incredible! This could be the breakthrough we've been waiting for. What do you think about the potential applications?",
+        tags: ["scientist", "genius", "enthusiastic", "research", "innovation"],
+        creator_notes: "A brilliant scientist character perfect for intellectual discussions and scientific adventures."
+    },
+    {
+        name: "Seraphina Nightshade",
+        description: "A mysterious woman with raven-black hair and striking violet eyes. She wears dark, elegant clothing and moves with the grace of a shadow.",
+        personality: "Mysterious, alluring, and slightly dangerous. She speaks in riddles and has an air of ancient knowledge and hidden power.",
+        scenario: "Seraphina is a powerful sorceress who walks between worlds, dealing in secrets and magic. She appears when the veil between realms is thin.",
+        first_mes: "Ah, you've found me in the shadows. Few dare to seek me out, and fewer still survive the encounter. What dark secrets do you wish to uncover?",
+        mes_example: "The old magic flows through your veins, I can sense it. But power without wisdom is a dangerous thing. Are you prepared for what you seek?",
+        tags: ["mysterious", "magic", "dark", "powerful", "enigmatic"],
+        creator_notes: "A mysterious and powerful character perfect for dark fantasy and magical intrigue."
+    },
+    {
+        name: "Commander Jake Ryder",
+        description: "A rugged military officer with short-cropped brown hair and steely blue eyes. He wears a crisp uniform with numerous commendations and carries himself with disciplined authority.",
+        personality: "Loyal, disciplined, and fiercely protective. He believes in duty, honor, and protecting those under his command at all costs.",
+        scenario: "Commander Ryder leads an elite special forces unit known for their impossible missions and unwavering dedication. He's a legend in military circles.",
+        first_mes: "At ease, soldier. I'm Commander Ryder. We've got a mission that requires the best of the best. Are you ready to serve your country and make a difference?",
+        mes_example: "In my line of work, hesitation gets people killed. Trust your training, trust your team, and never leave anyone behind. Understood?",
+        tags: ["military", "leader", "heroic", "protective", "duty"],
+        creator_notes: "A military leader character perfect for action scenarios and heroic adventures."
+    },
+    {
+        name: "Elena Rosewood",
+        description: "A charming woman with curly auburn hair and warm hazel eyes. She wears vintage clothing and has an artistic, bohemian style with paint-stained fingers.",
+        personality: "Creative, passionate, and free-spirited. She sees beauty in everything and has a talent for bringing out the artist in others.",
+        scenario: "Elena is a successful painter who runs an art studio in the heart of the city. She's known for her vibrant works and her ability to inspire others to create.",
+        first_mes: "Welcome to my little corner of the world! I was just finishing this piece when you arrived. Art has a way of speaking when words fail us. What's your story?",
+        mes_example: "Every brushstroke tells a story, every color holds an emotion. What do you see when you look at this canvas? What does it make you feel?",
+        tags: ["artist", "creative", "inspiring", "bohemian", "passionate"],
+        creator_notes: "A creative artist character perfect for inspiring conversations and artistic exploration."
+    },
+    {
+        name: "Professor Isabella Hartwell",
+        description: "An elegant woman with silver-streaked hair and intelligent eyes behind wire-rimmed glasses. She wears sophisticated clothing and carries herself with academic dignity.",
+        personality: "Brilliant, patient, and endlessly curious. She loves sharing knowledge and has a gift for making complex subjects accessible and fascinating.",
+        scenario: "Professor Hartwell is a renowned archaeologist who has discovered several lost civilizations. She's currently working on a groundbreaking excavation that could rewrite history.",
+        first_mes: "Ah, you've arrived just in time! I was examining this fascinating artifact when you came in. The secrets it holds could change everything we know about ancient civilizations. Care to take a look?",
+        mes_example: "History isn't just about dates and facts - it's about the people who lived, loved, and dreamed. What mysteries do you think this ancient civilization left behind?",
+        tags: ["professor", "archaeologist", "intelligent", "curious", "scholarly"],
+        creator_notes: "An academic character perfect for intellectual discussions and historical adventures."
+    },
+    {
+        name: "Phoenix Blaze",
+        description: "A dynamic young person with fiery red hair and bright amber eyes. They wear athletic gear and have an aura of energy and determination.",
+        personality: "Energetic, optimistic, and fiercely determined. They believe in pushing limits and never giving up, no matter how difficult the challenge.",
+        scenario: "Phoenix is a professional athlete and motivational speaker who helps others overcome obstacles and achieve their dreams. They're known for their incredible comeback stories.",
+        first_mes: "Hey there, champion! I can see that fire in your eyes - the same one that drives me every day. What challenge are you ready to conquer today?",
+        mes_example: "Every setback is just a setup for a comeback! I've been knocked down more times than I can count, but I always get back up stronger. What's your comeback story?",
+        tags: ["athlete", "motivational", "energetic", "determined", "inspiring"],
+        creator_notes: "A motivational character perfect for encouraging conversations and personal growth."
+    }
+];
 
 /**
- * Generate a fallback character when AI generation fails
- */
-function generateFallbackCharacter() {
-    const fallbackCharacters = [
-        {
-            name: "Luna Starweaver",
-            description: "A mysterious woman with silver hair and eyes that seem to hold the cosmos. She wears flowing robes adorned with celestial patterns and carries an ancient tome.",
-            personality: "Wise, mystical, and slightly enigmatic. Luna speaks in riddles and metaphors, always seeming to know more than she reveals.",
-            scenario: "Luna is a cosmic scholar who travels between dimensions, collecting knowledge from different realms. She's currently in a quiet library between worlds.",
-            first_mes: "*The silver-haired woman looks up from her ancient tome, eyes sparkling with starlight*\n\nAh, another seeker of knowledge has found their way to my sanctuary. Tell me, what mysteries do you wish to unravel?",
-            mes_example: "*She traces patterns in the air with her finger, leaving trails of starlight*\n\nThe universe speaks in patterns, dear one. Every question is a thread in the great tapestry of existence.",
-            tags: ["mystical", "wise", "cosmic", "scholar", "enigmatic"],
-            creator_notes: "AI-Generated Fallback Character: A cosmic scholar with mystical knowledge"
-        },
-        {
-            name: "Alex Chen",
-            description: "A young tech entrepreneur with messy hair and bright, curious eyes. Always wearing a hoodie and carrying multiple devices.",
-            personality: "Enthusiastic, innovative, and slightly chaotic. Alex is passionate about technology and solving problems with creative solutions.",
-            scenario: "Alex is working on a revolutionary AI project in their garage-turned-lab, surrounded by prototypes and energy drinks.",
-            first_mes: "*Looks up from a glowing screen, coffee in hand*\n\nOh hey! I was just debugging this neural network when you showed up. Want to see what I'm building?",
-            mes_example: "*Excitedly gestures at various gadgets*\n\nDude, you won't believe what I just figured out! This algorithm could change everything!",
-            tags: ["tech", "entrepreneur", "innovative", "young", "enthusiastic"],
-            creator_notes: "AI-Generated Fallback Character: A passionate tech entrepreneur"
-        },
-        {
-            name: "Captain Zara Voss",
-            description: "A seasoned space explorer with weathered features and a confident stance. Wears a practical flight suit with various tools and gadgets attached.",
-            personality: "Brave, resourceful, and slightly sarcastic. Zara has seen the galaxy and isn't easily impressed, but has a soft spot for those who show courage.",
-            scenario: "Zara is the captain of the starship 'Nebula Runner', currently docked at a space station for repairs and resupply.",
-            first_mes: "*Leans against the ship's console, arms crossed*\n\nWell, well. Another curious soul drawn to the stars. What brings you to my corner of the galaxy?",
-            mes_example: "*Chuckles while checking ship diagnostics*\n\nKid, I've seen black holes that were less dangerous than some of the situations I've been in. But hey, that's what makes life interesting.",
-            tags: ["space", "captain", "explorer", "brave", "experienced"],
-            creator_notes: "AI-Generated Fallback Character: A veteran space explorer"
-        }
-    ];
-
-    const randomIndex = Math.floor(Math.random() * fallbackCharacters.length);
-    return fallbackCharacters[randomIndex];
-}
-
-/**
- * Generate a random character using AI
+ * Generate a random character from predefined collection
  */
 export async function generateRandomCharacter() {
     try {
         console.log('Starting character generation...');
 
         // Show loading state
-        showSurpriseLoading(true);
-
-        // Select a random theme
-        const randomTheme = CHARACTER_GENERATION_PROMPTS.themes[Math.floor(Math.random() * CHARACTER_GENERATION_PROMPTS.themes.length)];
-        console.log('Selected theme:', randomTheme);
-
-        // Create the generation prompt
-        const prompt = `${CHARACTER_GENERATION_PROMPTS.main}\n\nTheme inspiration: ${randomTheme}`;
-        console.log('Generated prompt length:', prompt.length);
-
-        // Check if generateQuietPrompt is available
-        if (typeof generateQuietPrompt !== 'function') {
-            throw new Error('generateQuietPrompt function not available. Make sure you have an AI model connected.');
+        const surpriseButton = document.getElementById('rm_button_surprise');
+        if (surpriseButton) {
+            surpriseButton.classList.add('loading');
         }
 
-        console.log('Calling AI generation...');
-
-        // Try AI generation first, with simpler prompt
-        let aiResponse;
-        try {
-            aiResponse = await generateQuietPrompt({
-                quietPrompt: `Create a unique character for an AI chat application. Respond with a JSON object containing: name, description, personality, scenario, first_mes, mes_example, tags (array), and creator_notes. Theme: ${randomTheme}`,
-                quietToLoud: false,
-                skipWIAN: true,
-                responseLength: 1500
-            });
-        } catch (aiError) {
-            console.warn('AI generation failed, using fallback:', aiError);
-            const fallbackData = generateFallbackCharacter();
-            const character = await createCharacterFromData(fallbackData);
-            showSurpriseSuccess(character.name);
-            return character;
-        }
-
-        console.log('AI response received:', aiResponse);
-        console.log('AI response type:', typeof aiResponse);
-        console.log('AI response length:', aiResponse ? aiResponse.length : 'null/undefined');
-
-        // Handle empty or invalid responses
-        if (!aiResponse || aiResponse === '{}' || aiResponse.trim() === '') {
-            console.warn('AI returned empty response, using fallback character generation');
-            const characterData = generateFallbackCharacter();
-            const character = await createCharacterFromData(characterData);
-            showSurpriseSuccess(character.name);
-            return character;
-        }
-
-        // Parse the AI response
-        let characterData;
-        try {
-            // First, try to clean the response by removing markdown code blocks
-            let cleanedResponse = aiResponse;
-
-            // Remove markdown code blocks if present
-            if (cleanedResponse.includes('```json')) {
-                cleanedResponse = cleanedResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
-            }
-            if (cleanedResponse.includes('```')) {
-                cleanedResponse = cleanedResponse.replace(/```\s*/, '').replace(/```\s*$/, '');
-            }
-
-            // Remove any leading/trailing whitespace and newlines
-            cleanedResponse = cleanedResponse.trim();
-
-            // Find the first JSON object by looking for the first opening brace
-            const firstBraceIndex = cleanedResponse.indexOf('{');
-            if (firstBraceIndex !== -1) {
-                cleanedResponse = cleanedResponse.substring(firstBraceIndex);
-            }
-
-            // Try to find the first complete JSON object in the response
-            const jsonMatch = cleanedResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$|\s*---)/);
-            if (jsonMatch) {
-                cleanedResponse = jsonMatch[0];
-            }
-
-            console.log('Cleaned response:', cleanedResponse);
-            characterData = JSON.parse(cleanedResponse);
-        } catch (parseError) {
-            console.warn('Failed to parse AI response as JSON, attempting to extract JSON from response:', parseError);
-            // Try to extract the first JSON object from the response
-            let fallbackResponse = aiResponse;
-            // Find the first JSON object by looking for the first opening brace
-            const firstBraceIndex = fallbackResponse.indexOf('{');
-            if (firstBraceIndex !== -1) {
-                fallbackResponse = fallbackResponse.substring(firstBraceIndex);
-            }
-            const jsonMatch = fallbackResponse.match(/\{[\s\S]*?\}(?=\s*\{|\s*$|\s*---)/);
-            if (jsonMatch) {
-                try {
-                    characterData = JSON.parse(jsonMatch[0]);
-                } catch (secondParseError) {
-                    console.warn('Could not parse character data from AI response, using fallback');
-                    const fallbackData = generateFallbackCharacter();
-                    const character = await createCharacterFromData(fallbackData);
-                    showSurpriseSuccess(character.name);
-                    return character;
-                }
-            } else {
-                console.warn('Could not parse character data from AI response, using fallback');
-                const fallbackData = generateFallbackCharacter();
-                const character = await createCharacterFromData(fallbackData);
-                showSurpriseSuccess(character.name);
-                return character;
-            }
-        }
-
-        // Validate and normalize the character data
-        if (!characterData || !characterData.name || !characterData.description) {
-            console.warn('AI response missing required character fields, using fallback');
-            const fallbackData = generateFallbackCharacter();
-            const character = await createCharacterFromData(fallbackData);
-            showSurpriseSuccess(character.name);
-            return character;
-        }
-
-        // Normalize the character data to match expected format
-        const normalizedData = {
-            name: characterData.name || 'Unknown Character',
-            description: characterData.description || 'A mysterious character',
-            personality: characterData.personality || 'Friendly and engaging',
-            scenario: characterData.scenario || 'A casual encounter',
-            first_mes: characterData.first_mes || 'Hello! Nice to meet you!',
-            mes_example: characterData.mes_example || (Array.isArray(characterData.mes) ? characterData.mes[0] : 'How are you doing today?'),
-            tags: Array.isArray(characterData.tags) ? characterData.tags : ['ai-generated', 'friendly'],
-            creator_notes: characterData.creator_notes || 'AI-Generated Character'
-        };
-
-        console.log('Normalized character data:', normalizedData);
+        // Select a random character from the predefined collection
+        const randomIndex = Math.floor(Math.random() * PREDEFINED_CHARACTERS.length);
+        const characterData = PREDEFINED_CHARACTERS[randomIndex];
+        
+        console.log('Selected character:', characterData.name);
+        console.log('Character theme:', characterData.tags[0]);
 
         // Generate a random avatar using AI image generation (if available)
-        const avatarUrl = await generateCharacterAvatar(normalizedData);
+        const avatarUrl = await generateCharacterAvatar(characterData);
 
         // Create the character
-        const character = await createCharacterFromData(normalizedData, avatarUrl);
+        const character = await createCharacterFromData(characterData, avatarUrl);
 
         // Show success message
         showSurpriseSuccess(character.name);
@@ -252,106 +146,87 @@ export async function generateRandomCharacter() {
 
     } catch (error) {
         console.error('Error generating random character:', error);
-        showSurpriseError(error.message);
+        showSurpriseError('Failed to generate character');
         throw error;
-    } finally {
-        showSurpriseLoading(false);
     }
 }
 
 /**
- * Generate an AI avatar for the character
+ * Generate a character avatar using AI image generation
  */
 async function generateCharacterAvatar(characterData) {
     try {
-        // Check if Stable Diffusion or other image generation is available
-        if (window.stableDiffusionAvailable) {
-            const avatarPrompt = `Portrait of ${characterData.name}: ${characterData.description}. High quality, detailed, professional character portrait.`;
-
-            // Use the existing Stable Diffusion integration
-            const avatarResponse = await fetch('/api/stable-diffusion/generate', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({
-                    prompt: avatarPrompt,
-                    negative_prompt: 'blurry, low quality, distorted, deformed',
-                    width: 512,
-                    height: 512,
-                    steps: 20,
-                    cfg_scale: 7.5
-                })
-            });
-
-            if (avatarResponse.ok) {
-                const avatarData = await avatarResponse.json();
-                return avatarData.image_url;
-            }
-        }
-
-        // Fallback to default avatar
+        // Create a simple prompt for avatar generation
+        const avatarPrompt = `Portrait of ${characterData.name}: ${characterData.description}. Professional character portrait, clean background, high quality, detailed`;
+        
+        console.log('Generating avatar with prompt:', avatarPrompt);
+        
+        // Try to generate an avatar using the AI image generation
+        const avatarResponse = await generateQuietPrompt({
+            quietPrompt: avatarPrompt,
+            quietToLoud: false,
+            skipWIAN: true,
+            responseLength: 100
+        });
+        
+        // For now, return null as avatar generation might need special handling
+        // The character will be created with a default avatar
         return null;
-
+        
     } catch (error) {
-        console.warn('Could not generate AI avatar, using default:', error);
+        console.warn('Avatar generation failed, using default avatar:', error);
         return null;
     }
 }
 
 /**
- * Create a character from the generated data
+ * Create a character from character data
  */
 async function createCharacterFromData(characterData, avatarUrl = null) {
     try {
-        const formData = new FormData();
-        formData.append('ch_name', characterData.name);
-        formData.append('description', characterData.description);
-        formData.append('personality', characterData.personality);
-        formData.append('scenario', characterData.scenario);
-        formData.append('first_mes', characterData.first_mes);
-        formData.append('mes_example', characterData.mes_example);
-        formData.append('creator_notes', `AI-Generated Character: ${characterData.creator_notes}`);
-        formData.append('tags', characterData.tags.join(', '));
+        console.log('Creating character from data:', characterData.name);
+        
+        // Prepare the character data for SuperTavern
+        const characterPayload = {
+            name: characterData.name,
+            description: characterData.description,
+            personality: characterData.personality,
+            scenario: characterData.scenario,
+            first_mes: characterData.first_mes,
+            mes_example: characterData.mes_example,
+            tags: characterData.tags,
+            creator_notes: characterData.creator_notes,
+            avatar: avatarUrl || 'default'
+        };
 
-        // Add avatar if generated
-        if (avatarUrl) {
-            try {
-                const avatarResponse = await fetch(avatarUrl);
-                const avatarBlob = await avatarResponse.blob();
-                formData.append('avatar', avatarBlob, `${characterData.name.replace(/\s+/g, '_')}.png`);
-            } catch (avatarError) {
-                console.warn('Could not fetch generated avatar:', avatarError);
-            }
-        }
-
-        // Create the character
+        // Create the character via API
         const response = await fetch('/api/characters/create', {
             method: 'POST',
-            headers: getRequestHeaders({ omitContentType: true }),
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+                ...getRequestHeaders()
+            },
+            body: JSON.stringify(characterPayload)
         });
 
         if (!response.ok) {
             throw new Error(`Failed to create character: ${response.statusText}`);
         }
 
-        const avatarName = await response.text();
+        const result = await response.json();
+        console.log('Character created successfully:', result);
 
+        // Refresh the character list
         console.log('Refreshing character list...');
-
-        // Follow the same pattern as the main character creation flow
-        console.log('Calling getCharacters()...');
         await getCharacters();
-        console.log('getCharacters() completed');
+        console.log('Character list refreshed');
 
-        // Use the same select_rm_info call as the main character creation
-        console.log('Calling select_rm_info for character creation...');
-        select_rm_info('char_create', avatarName);
+        // Select the new character
+        console.log('Selecting new character...');
+        select_rm_info('char_create', characterData.name);
+        console.log('Character selected');
 
-        return {
-            name: characterData.name,
-            avatar: avatarName,
-            data: characterData
-        };
+        return result;
 
     } catch (error) {
         console.error('Error creating character:', error);
@@ -360,160 +235,62 @@ async function createCharacterFromData(characterData, avatarUrl = null) {
 }
 
 /**
- * Show loading state for surprise button
- */
-function showSurpriseLoading(loading) {
-    const button = document.getElementById('rm_button_surprise');
-    if (button) {
-        if (loading) {
-            button.classList.add('loading');
-            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            button.disabled = true;
-        } else {
-            button.classList.remove('loading');
-            button.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>';
-            button.disabled = false;
-        }
-    }
-}
-
-/**
  * Show success message
  */
 function showSurpriseSuccess(characterName) {
-    // Create a temporary success message
-    const successDiv = document.createElement('div');
-    successDiv.className = 'surprise-success-message';
-    successDiv.innerHTML = `
-        <div style="
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            z-index: 10000;
-            text-align: center;
-            font-weight: 600;
-            animation: surpriseSuccess 2s ease-out forwards;
-        ">
-            <i class="fa-solid fa-sparkles" style="font-size: 24px; margin-bottom: 10px;"></i>
-            <div>✨ Surprise! ✨</div>
-            <div style="margin-top: 5px; font-size: 18px;">${characterName} has been created!</div>
-        </div>
-    `;
-
-    document.body.appendChild(successDiv);
-
-    // Remove after animation
-    setTimeout(() => {
-        if (successDiv.parentNode) {
-            successDiv.parentNode.removeChild(successDiv);
-        }
-    }, 2000);
+    const surpriseButton = document.getElementById('rm_button_surprise');
+    if (surpriseButton) {
+        surpriseButton.classList.remove('loading');
+        surpriseButton.innerHTML = `<i class="fa-solid fa-check"></i> ${characterName} created!`;
+        surpriseButton.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+            surpriseButton.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>';
+            surpriseButton.style.background = '';
+        }, 3000);
+    }
 }
 
 /**
  * Show error message
  */
-function showSurpriseError(errorMessage) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'surprise-error-message';
-    errorDiv.innerHTML = `
-        <div style="
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            padding: 20px 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            z-index: 10000;
-            text-align: center;
-            font-weight: 600;
-            animation: surpriseError 3s ease-out forwards;
-        ">
-            <i class="fa-solid fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px;"></i>
-            <div>Oops! Something went wrong</div>
-            <div style="margin-top: 5px; font-size: 14px; opacity: 0.9;">${errorMessage}</div>
-        </div>
-    `;
-
-    document.body.appendChild(errorDiv);
-
-    // Remove after animation
-    setTimeout(() => {
-        if (errorDiv.parentNode) {
-            errorDiv.parentNode.removeChild(errorDiv);
-        }
-    }, 3000);
+function showSurpriseError(message) {
+    const surpriseButton = document.getElementById('rm_button_surprise');
+    if (surpriseButton) {
+        surpriseButton.classList.remove('loading');
+        surpriseButton.innerHTML = `<i class="fa-solid fa-exclamation-triangle"></i> ${message}`;
+        surpriseButton.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+            surpriseButton.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i>';
+            surpriseButton.style.background = '';
+        }, 3000);
+    }
 }
 
 /**
- * Initialize the surprise button functionality
+ * Initialize the surprise character generator
  */
-export function initSurpriseCharacterGenerator() {
+export function initializeSurpriseGenerator() {
     console.log('Initializing surprise character generator...');
-
-    // Add click handler for surprise button
+    
+    // Add click handler for the surprise button
     $(document).on('click', '#rm_button_surprise', async function(e) {
         e.preventDefault();
         console.log('Surprise button clicked!');
-
+        
         try {
             await generateRandomCharacter();
         } catch (error) {
             console.error('Surprise character generation failed:', error);
-            showSurpriseError(`Generation failed: ${error.message}`);
+            showSurpriseError('Generation failed');
         }
     });
-
-    // Add CSS animations
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes surpriseSuccess {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.5);
-            }
-            50% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1.1);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(1);
-            }
-        }
-
-        @keyframes surpriseError {
-            0% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(0.5);
-            }
-            20% {
-                opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translate(-50%, -50%) scale(1);
-            }
-        }
-
-        .surprise-button.loading {
-            animation: surpriseGradient 0.5s ease infinite;
-        }
-    `;
-    document.head.appendChild(style);
+    
+    console.log('Surprise character generator initialized');
 }
 
-// Auto-initialize when the script loads
-$(document).ready(() => {
-    initSurpriseCharacterGenerator();
-});
+// Initialize when the script loads
+initializeSurpriseGenerator();
