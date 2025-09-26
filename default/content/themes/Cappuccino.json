@@ -32,5 +32,12 @@
     "custom_css": "",
     "bogus_folders": true,
     "reduced_motion": false,
-    "compact_input_area": true
+    "compact_input_area": true,
+    "ui_density": "cozy",
+    "chat_message_gap": 12,
+    "chat_bubble_radius": 18,
+    "ui_message_dividers": false,
+    "ui_accent_glow": false,
+    "ui_focus_highlights": true,
+    "ui_glass_panels": false
 }

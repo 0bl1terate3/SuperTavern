@@ -4752,6 +4752,61 @@
                                     <input class="neo-range-input" type="number" min="0" max="12" step="1" data-for="blur_intensity" id="blur_intensity_counter">
                                 </div>
                             </div>
+                            <div class="ui-layout-controls">
+                                <div class="ui-layout-heading">
+                                    <i class="fa-solid fa-arrows-up-down-left-right" aria-hidden="true"></i>
+                                    <div>
+                                        <span>Layout &amp; Density</span>
+                                        <small>Fine-tune spacing, glass, and message styling</small>
+                                    </div>
+                                </div>
+                                <div class="ui-density-select">
+                                    <label for="ui_density">
+                                        <small>Interface Density</small>
+                                    </label>
+                                    <select id="ui_density" class="widthNatural flex1 margin0 text_pole">
+                                        <option value="compact">Compact</option>
+                                        <option value="cozy">Cozy</option>
+                                        <option value="spacious">Spacious</option>
+                                    </select>
+                                </div>
+                                <div class="flex-container flexWrap ui-layout-slider-grid">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p ui-slider-field">
+                                        <small>
+                                            <span>Message Spacing</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Adjusts vertical space between chat messages."></div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="chat_message_gap" name="chat_message_gap" min="0" max="32" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="32" step="1" data-for="chat_message_gap" id="chat_message_gap_counter">
+                                    </div>
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p ui-slider-field">
+                                        <small>
+                                            <span>Bubble Corner Radius</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Controls how rounded message bubbles appear."></div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="chat_bubble_radius" name="chat_bubble_radius" min="6" max="32" step="1">
+                                        <input class="neo-range-input" type="number" min="6" max="32" step="1" data-for="chat_bubble_radius" id="chat_bubble_radius_counter">
+                                    </div>
+                                </div>
+                                <div class="ui-layout-toggle-grid">
+                                    <label for="ui_message_dividers" class="checkbox_label" title="Add separators underneath messages for faster scanning.">
+                                        <input id="ui_message_dividers" type="checkbox">
+                                        <small>Show Message Dividers</small>
+                                    </label>
+                                    <label for="ui_accent_glow" class="checkbox_label" title="Apply a soft glow behind message bubbles for depth.">
+                                        <input id="ui_accent_glow" type="checkbox">
+                                        <small>Ambient Bubble Glow</small>
+                                    </label>
+                                    <label for="ui_focus_highlights" class="checkbox_label" title="Outline hovered or focused messages to improve readability.">
+                                        <input id="ui_focus_highlights" type="checkbox">
+                                        <small>Focus Highlights</small>
+                                    </label>
+                                    <label for="ui_glass_panels" class="checkbox_label" title="Enhance settings drawers with layered glass panels.">
+                                        <input id="ui_glass_panels" type="checkbox">
+                                        <small>Glass Panel Chrome</small>
+                                    </label>
+                                </div>
+                            </div>
                             <hr>
                             <div name="themeToggles">
                                 <!-- <h4 data-i18n="Theme Toggles">Theme Toggles</h4> -->
