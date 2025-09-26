@@ -64,14 +64,25 @@ Make the character creative, unique, and engaging. Avoid clichés and create som
  */
 export async function generateRandomCharacter() {
     try {
+        console.log('Starting character generation...');
+
         // Show loading state
         showSurpriseLoading(true);
 
         // Select a random theme
         const randomTheme = CHARACTER_GENERATION_PROMPTS.themes[Math.floor(Math.random() * CHARACTER_GENERATION_PROMPTS.themes.length)];
+        console.log('Selected theme:', randomTheme);
 
         // Create the generation prompt
         const prompt = `${CHARACTER_GENERATION_PROMPTS.main}\n\nTheme inspiration: ${randomTheme}`;
+        console.log('Generated prompt length:', prompt.length);
+
+        // Check if generateQuietPrompt is available
+        if (typeof generateQuietPrompt !== 'function') {
+            throw new Error('generateQuietPrompt function not available. Make sure you have an AI model connected.');
+        }
+
+        console.log('Calling AI generation...');
 
         // Generate the character using AI
         const aiResponse = await generateQuietPrompt({
@@ -94,6 +105,8 @@ export async function generateRandomCharacter() {
                 required: ["name", "description", "personality", "scenario", "first_mes", "mes_example", "tags", "creator_notes"]
             }
         });
+
+        console.log('AI response received:', aiResponse);
 
         // Parse the AI response
         let characterData;
@@ -328,14 +341,21 @@ function showSurpriseError(errorMessage) {
  * Initialize the surprise button functionality
  */
 export function initSurpriseCharacterGenerator() {
+    console.log('Initializing surprise character generator...');
+
     // Add click handler for surprise button
     $(document).on('click', '#rm_button_surprise', async function(e) {
         e.preventDefault();
+        console.log('Surprise button clicked!');
+
+        // Test if button click is working
+        showSurpriseSuccess('Button clicked! Testing...');
 
         try {
             await generateRandomCharacter();
         } catch (error) {
             console.error('Surprise character generation failed:', error);
+            showSurpriseError(`Generation failed: ${error.message}`);
         }
     });
 
