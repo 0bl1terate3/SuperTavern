@@ -9,6 +9,11 @@ const DEFAULT_SETTINGS = {
         role: 'participant',
         clientId: '',
     },
+    searchNavigation: {
+        fullChatSearch: false,
+        filterByUserOrDate: false,
+        jumpToLastUnread: false,
+    },
     sharedMemory: {
         enabled: false,
         projectScoped: true,
@@ -607,6 +612,8 @@ function render() {
     renderGamification();
     applyAccessibilityClasses();
     updateDynamicTheme();
+    applySearchNavigationState();
+    broadcastSearchNavigationState();
 }
 
 function syncUIFromState() {
@@ -806,6 +813,45 @@ function updateDynamicTheme() {
     document.documentElement.style.setProperty('--supertavern-theme-alpha', intensity.toFixed(3));
 }
 
+function applySearchNavigationState() {
+    const body = document.body;
+    if (!body) {
+        return;
+    }
+
+    const navigation = state.searchNavigation || {};
+    body.classList.toggle('supertavern-search-enabled', Boolean(navigation.fullChatSearch));
+    body.classList.toggle('supertavern-search-filter-enabled', Boolean(navigation.filterByUserOrDate));
+    body.classList.toggle('supertavern-search-jump-enabled', Boolean(navigation.jumpToLastUnread));
+}
+
+function broadcastSearchNavigationState() {
+    if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') {
+        return;
+    }
+
+    const detail = {
+        fullChatSearch: Boolean(state.searchNavigation?.fullChatSearch),
+        filterByUserOrDate: Boolean(state.searchNavigation?.filterByUserOrDate),
+        jumpToLastUnread: Boolean(state.searchNavigation?.jumpToLastUnread),
+    };
+
+    const eventName = 'supertavern:search-navigation-change';
+
+    if (typeof CustomEvent === 'function') {
+        window.dispatchEvent(new CustomEvent(eventName, { detail }));
+        return;
+    }
+
+    if (typeof document !== 'undefined' && typeof document.createEvent === 'function') {
+        const event = document.createEvent('CustomEvent');
+        if (typeof event.initCustomEvent === 'function') {
+            event.initCustomEvent(eventName, false, false, detail);
+            window.dispatchEvent(event);
+        }
+    }
+}
+
 function applyState() {
     ensureClientId();
 
@@ -815,6 +861,8 @@ function applyState() {
 
     applyAccessibilityClasses();
     updateDynamicTheme();
+    applySearchNavigationState();
+    broadcastSearchNavigationState();
 }
 
 function ensureClientId() {
@@ -864,6 +912,11 @@ function setStateValue(path, value) {
 
     if (path.startsWith('customization')) {
         updateDynamicTheme();
+    }
+
+    if (path.startsWith('searchNavigation')) {
+        applySearchNavigationState();
+        broadcastSearchNavigationState();
     }
 
     if (path === 'gamification.enabled') {
