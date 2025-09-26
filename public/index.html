@@ -4847,191 +4847,288 @@
             </div>
             <div id="supertavern-settings" class="drawer-content closedDrawer">
                 <div id="supertavern-settings-panel" class="flex-container flexFlowColumn wide100p flex1">
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Real-Time Collaboration</h3>
-                        <p>Coordinate live sessions with multi-user chat, moderation roles, and private threads.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="multiUser.enabled">
-                            <small>Enable real-time multi-user chat rooms</small>
-                        </label>
-                        <div data-supertavern-requires="multiUser.enabled">
-                            <label class="checkbox_label">
-                                <input type="checkbox" data-supertavern-setting="multiUser.conflictResolution">
-                                <small>Real-time synchronization with conflict resolution</small>
-                            </label>
-                            <label class="checkbox_label">
-                                <input type="checkbox" data-supertavern-setting="multiUser.privateSideChats">
-                                <small>Allow private side conversations within group chats</small>
-                            </label>
-                            <label class="checkbox_label">
-                                <input type="checkbox" data-supertavern-setting="multiUser.crossTalk">
-                                <small>Cross-talk functionality using <code>/name</code> prefix</small>
-                            </label>
-                            <div>
-                                <label for="supertavern-role">Your role</label>
-                                <select id="supertavern-role" data-supertavern-setting="multiUser.role">
-                                    <option value="participant">Participant</option>
-                                    <option value="moderator">Moderator</option>
-                                    <option value="observer">Observer</option>
-                                </select>
-                            </div>
-                            <div>
-                                <span>Status:</span>
-                                <span id="supertavern-multiuser-status">Offline</span>
+                    <div class="standoutHeader supertavern-panel-header">
+                        <div class="supertavern-panel-heading">
+                            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            <div class="supertavern-panel-title">
+                                <span>SuperTavern Control Center</span>
+                                <small>Shape collaborative chat experiences with precision toggles</small>
                             </div>
                         </div>
                     </div>
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Shared Memory Systems</h3>
-                        <p>Capture project knowledge as the conversation evolves and keep teams aligned.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="sharedMemory.enabled">
-                            <small>Persistent shared knowledge base across users</small>
-                        </label>
-                        <div data-supertavern-requires="sharedMemory.enabled">
-                            <label class="checkbox_label">
-                                <input type="checkbox" data-supertavern-setting="sharedMemory.projectScoped">
-                                <small>Use project-specific shared memory</small>
-                            </label>
-                            <label class="checkbox_label">
-                                <input type="checkbox" data-supertavern-setting="sharedMemory.privacyControls">
-                                <small>Respect privacy controls before sharing</small>
-                            </label>
-                            <div>
-                                <button type="button" id="supertavern-shared-memory-export" class="menu_button">Export snapshot</button>
-                                <button type="button" id="supertavern-shared-memory-clear" class="menu_button">Clear project memory</button>
+                    <p class="supertavern-panel-description">
+                        Align group chats with modular navigation, shared knowledge, and playful enhancements tailored for every crew.
+                    </p>
+                    <div class="supertavern-settings-grid">
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-users-gear" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Real-Time Collaboration</span>
+                                        <small class="supertavern-card-subtitle">Moderation roles &amp; private threads</small>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <ul id="supertavern-shared-memory-list" aria-live="polite"></ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Search and Navigation</h3>
-                        <p>Make sprawling group chats easier to manage with powerful navigation aids.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="searchNavigation.fullChatSearch">
-                            <small>Full chat search across messages, participants, and dates</small>
-                        </label>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="searchNavigation.filterByUserOrDate">
-                            <small>Filter group chat history by specific users or date ranges</small>
-                        </label>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="searchNavigation.jumpToLastUnread">
-                            <small>Jump back to the latest unread messages after time away</small>
-                        </label>
-                    </div>
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Team Workspaces &amp; Analytics</h3>
-                        <p>Track participation and coordinate shared assets across collaborators.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="team.analyticsEnabled">
-                            <small>Enable team analytics and usage tracking</small>
-                        </label>
-                        <div data-supertavern-requires="team.analyticsEnabled">
-                            <p>Message volume is tallied in real-time for every participant.</p>
-                            <ul id="supertavern-team-analytics" aria-live="polite"></ul>
-                        </div>
-                    </div>
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Gamification &amp; Achievements</h3>
-                        <p>Reward healthy collaboration with XP, levels, and collectible badges.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="gamification.enabled">
-                            <small>Enable experience tracking and badges</small>
-                        </label>
-                        <div data-supertavern-requires="gamification.enabled">
-                            <div>
-                                <span id="supertavern-xp-level">Level 1</span>
-                                <progress id="supertavern-xp-progress" max="100" value="0" aria-label="Experience progress"></progress>
-                                <span id="supertavern-xp-value">0 XP</span>
-                            </div>
-                            <div>
-                                <h4>Achievements</h4>
-                                <ul id="supertavern-achievements" aria-live="polite"></ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Enhanced Accessibility</h3>
-                        <p>Adapt the interface for screen readers, sensory comfort, and focus management.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="accessibility.highContrast">
-                            <small>Enable high-contrast theme adjustments</small>
-                        </label>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="accessibility.dyslexiaFriendly">
-                            <small>Dyslexia-friendly font and spacing</small>
-                        </label>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="accessibility.reducedMotion">
-                            <small>Reduced motion and animation</small>
-                        </label>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="accessibility.focusManagement">
-                            <small>Enable focus management tools</small>
-                        </label>
-                    </div>
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Creative Joke Generator</h3>
-                        <p>Generate absurd roasts, creative jokes, and amplify humor with AI-powered tools.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="jokeGenerator.enabled">
-                            <small>Enable Creative Joke Generator</small>
-                        </label>
-                        <div data-supertavern-requires="jokeGenerator.enabled">
-                            <label class="checkbox_label">
-                                <input type="checkbox" data-supertavern-setting="jokeGenerator.autoAbsurdify">
-                                <small>Auto-absurdify messages in chat</small>
-                            </label>
-                            <div>
-                                <label for="joke-intensity">Joke Intensity</label>
-                                <select id="joke-intensity" data-supertavern-setting="jokeGenerator.intensity">
-                                    <option value="mild">Mild (Family Friendly)</option>
-                                    <option value="medium">Medium (Playful Roasts)</option>
-                                    <option value="extreme">Extreme (Absurd Comedy)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="joke-style">Default Joke Style</label>
-                                <select id="joke-style" data-supertavern-setting="jokeGenerator.defaultStyle">
-                                    <option value="roast">Roast Battle</option>
-                                    <option value="absurd">Absurd Comedy</option>
-                                    <option value="wordplay">Wordplay & Puns</option>
-                                    <option value="situational">Situational Comedy</option>
-                                </select>
-                            </div>
-                            <div>
+                            <p class="supertavern-card-description">Coordinate live sessions with multi-user chat, moderation roles, and private threads.</p>
+                            <div class="supertavern-toggle-list">
                                 <label class="checkbox_label">
-                                    <input type="checkbox" data-supertavern-setting="jokeGenerator.characterSpecific">
-                                    <small>Character-specific joke styles</small>
+                                    <input type="checkbox" data-supertavern-setting="multiUser.enabled">
+                                    <small>Enable real-time multi-user chat rooms</small>
                                 </label>
                             </div>
-                            <div>
-                                <button type="button" id="joke-generator-test" class="menu_button joke-generator-button">
-                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Test Joke Generator
-                                </button>
+                            <div class="supertavern-subgroup" data-supertavern-requires="multiUser.enabled">
+                                <div class="supertavern-toggle-list">
+                                    <label class="checkbox_label">
+                                        <input type="checkbox" data-supertavern-setting="multiUser.conflictResolution">
+                                        <small>Real-time synchronization with conflict resolution</small>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input type="checkbox" data-supertavern-setting="multiUser.privateSideChats">
+                                        <small>Allow private side conversations within group chats</small>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input type="checkbox" data-supertavern-setting="multiUser.crossTalk">
+                                        <small>Cross-talk functionality using <code>/name</code> prefix</small>
+                                    </label>
+                                </div>
+                                <div class="supertavern-field">
+                                    <label for="supertavern-role">Your role</label>
+                                    <select id="supertavern-role" class="text_pole" data-supertavern-setting="multiUser.role">
+                                        <option value="participant">Participant</option>
+                                        <option value="moderator">Moderator</option>
+                                        <option value="observer">Observer</option>
+                                    </select>
+                                </div>
+                                <div class="supertavern-status-row">
+                                    <span>Status</span>
+                                    <span id="supertavern-multiuser-status" class="supertavern-status-indicator">Offline</span>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="flex-container flexFlowColumn">
-                        <h3>Advanced Customization</h3>
-                        <p>Drive dynamic themes and procedural layouts that respond to collaboration.</p>
-                        <label class="checkbox_label">
-                            <input type="checkbox" data-supertavern-setting="customization.dynamicThemes">
-                            <small>Dynamic theme reactions to conversation mood</small>
-                        </label>
-                        <div>
-                            <p>Need integrations, automation, or content tooling? Track ongoing roadmap items below.</p>
-                            <ul>
-                                <li>Integration &amp; automation pipeline (webhooks, STscript marketplace)</li>
-                                <li>Advanced AI ensemble routing and agent orchestration</li>
-                                <li>Creative toolchain upgrades for multimedia collaboration</li>
-                                <li>Semantic search, knowledge graphs, and privacy enhancements</li>
-                                <li>Community marketplace, seasonal challenges, and mobile sync</li>
-                            </ul>
-                        </div>
+                        </section>
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-database" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Shared Memory Systems</span>
+                                        <small class="supertavern-card-subtitle">Collective project intelligence</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="supertavern-card-description">Capture project knowledge as the conversation evolves and keep teams aligned.</p>
+                            <div class="supertavern-toggle-list">
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="sharedMemory.enabled">
+                                    <small>Persistent shared knowledge base across users</small>
+                                </label>
+                            </div>
+                            <div class="supertavern-subgroup" data-supertavern-requires="sharedMemory.enabled">
+                                <div class="supertavern-toggle-list">
+                                    <label class="checkbox_label">
+                                        <input type="checkbox" data-supertavern-setting="sharedMemory.projectScoped">
+                                        <small>Use project-specific shared memory</small>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input type="checkbox" data-supertavern-setting="sharedMemory.privacyControls">
+                                        <small>Respect privacy controls before sharing</small>
+                                    </label>
+                                </div>
+                                <div class="supertavern-button-row">
+                                    <button type="button" id="supertavern-shared-memory-export" class="menu_button">Export snapshot</button>
+                                    <button type="button" id="supertavern-shared-memory-clear" class="menu_button">Clear project memory</button>
+                                </div>
+                                <ul id="supertavern-shared-memory-list" class="supertavern-list" aria-live="polite"></ul>
+                            </div>
+                        </section>
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Search &amp; Navigation</span>
+                                        <small class="supertavern-card-subtitle">Precision recall tools</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="supertavern-card-description">Make sprawling group chats easier to manage with powerful navigation aids.</p>
+                            <div class="supertavern-toggle-list">
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="searchNavigation.fullChatSearch">
+                                    <small>Full chat search across messages, participants, and dates</small>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="searchNavigation.filterByUserOrDate">
+                                    <small>Filter group chat history by specific users or date ranges</small>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="searchNavigation.jumpToLastUnread">
+                                    <small>Jump back to the latest unread messages after time away</small>
+                                </label>
+                            </div>
+                        </section>
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Team Workspaces &amp; Analytics</span>
+                                        <small class="supertavern-card-subtitle">Participation insights</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="supertavern-card-description">Track participation and coordinate shared assets across collaborators.</p>
+                            <div class="supertavern-toggle-list">
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="team.analyticsEnabled">
+                                    <small>Enable team analytics and usage tracking</small>
+                                </label>
+                            </div>
+                            <div class="supertavern-subgroup" data-supertavern-requires="team.analyticsEnabled">
+                                <p class="supertavern-card-description">Message volume is tallied in real-time for every participant.</p>
+                                <ul id="supertavern-team-analytics" class="supertavern-list" aria-live="polite"></ul>
+                            </div>
+                        </section>
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-trophy" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Gamification &amp; Achievements</span>
+                                        <small class="supertavern-card-subtitle">Celebrate collaboration</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="supertavern-card-description">Reward healthy collaboration with XP, levels, and collectible badges.</p>
+                            <div class="supertavern-toggle-list">
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="gamification.enabled">
+                                    <small>Enable experience tracking and badges</small>
+                                </label>
+                            </div>
+                            <div class="supertavern-subgroup" data-supertavern-requires="gamification.enabled">
+                                <div class="supertavern-meter">
+                                    <span id="supertavern-xp-level">Level 1</span>
+                                    <progress id="supertavern-xp-progress" max="100" value="0" aria-label="Experience progress"></progress>
+                                    <span id="supertavern-xp-value">0 XP</span>
+                                </div>
+                                <div>
+                                    <h4 class="supertavern-subheading">Achievements</h4>
+                                    <ul id="supertavern-achievements" class="supertavern-list" aria-live="polite"></ul>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-universal-access" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Enhanced Accessibility</span>
+                                        <small class="supertavern-card-subtitle">Comfort-first controls</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="supertavern-card-description">Adapt the interface for screen readers, sensory comfort, and focus management.</p>
+                            <div class="supertavern-toggle-list">
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="accessibility.highContrast">
+                                    <small>Enable high-contrast theme adjustments</small>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="accessibility.dyslexiaFriendly">
+                                    <small>Dyslexia-friendly font and spacing</small>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="accessibility.reducedMotion">
+                                    <small>Reduced motion and animation</small>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="accessibility.focusManagement">
+                                    <small>Enable focus management tools</small>
+                                </label>
+                            </div>
+                        </section>
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-face-grin-squint" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Creative Joke Generator</span>
+                                        <small class="supertavern-card-subtitle">Absurd roasts on demand</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="supertavern-card-description">Generate absurd roasts, creative jokes, and amplify humor with AI-powered tools.</p>
+                            <div class="supertavern-toggle-list">
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="jokeGenerator.enabled">
+                                    <small>Enable Creative Joke Generator</small>
+                                </label>
+                            </div>
+                            <div class="supertavern-subgroup" data-supertavern-requires="jokeGenerator.enabled">
+                                <div class="supertavern-toggle-list">
+                                    <label class="checkbox_label">
+                                        <input type="checkbox" data-supertavern-setting="jokeGenerator.autoAbsurdify">
+                                        <small>Auto-absurdify messages in chat</small>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input type="checkbox" data-supertavern-setting="jokeGenerator.characterSpecific">
+                                        <small>Character-specific joke styles</small>
+                                    </label>
+                                </div>
+                                <div class="supertavern-field">
+                                    <label for="joke-intensity">Joke Intensity</label>
+                                    <select id="joke-intensity" class="text_pole" data-supertavern-setting="jokeGenerator.intensity">
+                                        <option value="mild">Mild (Family Friendly)</option>
+                                        <option value="medium">Medium (Playful Roasts)</option>
+                                        <option value="extreme">Extreme (Absurd Comedy)</option>
+                                    </select>
+                                </div>
+                                <div class="supertavern-field">
+                                    <label for="joke-style">Default Joke Style</label>
+                                    <select id="joke-style" class="text_pole" data-supertavern-setting="jokeGenerator.defaultStyle">
+                                        <option value="roast">Roast Battle</option>
+                                        <option value="absurd">Absurd Comedy</option>
+                                        <option value="wordplay">Wordplay &amp; Puns</option>
+                                        <option value="situational">Situational Comedy</option>
+                                    </select>
+                                </div>
+                                <div class="supertavern-button-row">
+                                    <button type="button" id="joke-generator-test" class="menu_button joke-generator-button">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        <span>Test Joke Generator</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="supertavern-card">
+                            <div class="standoutHeader supertavern-card-header">
+                                <div class="supertavern-card-heading">
+                                    <i class="fa-solid fa-swatchbook" aria-hidden="true"></i>
+                                    <div>
+                                        <span class="supertavern-card-title">Advanced Customization</span>
+                                        <small class="supertavern-card-subtitle">Dynamic theming roadmap</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="supertavern-card-description">Drive dynamic themes and procedural layouts that respond to collaboration.</p>
+                            <div class="supertavern-toggle-list">
+                                <label class="checkbox_label">
+                                    <input type="checkbox" data-supertavern-setting="customization.dynamicThemes">
+                                    <small>Dynamic theme reactions to conversation mood</small>
+                                </label>
+                            </div>
+                            <div class="supertavern-subgroup">
+                                <p class="supertavern-card-description">Need integrations, automation, or content tooling? Track ongoing roadmap items below.</p>
+                                <ul class="supertavern-list">
+                                    <li>Integration &amp; automation pipeline (webhooks, STscript marketplace)</li>
+                                    <li>Advanced AI ensemble routing and agent orchestration</li>
+                                    <li>Creative toolchain upgrades for multimedia collaboration</li>
+                                    <li>Semantic search, knowledge graphs, and privacy enhancements</li>
+                                    <li>Community marketplace, seasonal challenges, and mobile sync</li>
+                                </ul>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>

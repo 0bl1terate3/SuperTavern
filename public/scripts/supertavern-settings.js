@@ -662,6 +662,12 @@ function renderMultiUserStatus() {
     }
 
     statusElement.textContent = lastStatus;
+    const normalized = String(lastStatus || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || 'unknown';
+    statusElement.dataset.status = normalized;
+    statusElement.setAttribute('title', `Current session status: ${lastStatus}`);
 }
 
 function renderSharedMemory() {
