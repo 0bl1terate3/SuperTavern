@@ -275,6 +275,7 @@ import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, ini
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
+import { initVoiceAudioDrawer, loadVoiceAudioSettings } from './scripts/voice-audio.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SuperTavern = {
@@ -708,6 +709,7 @@ async function firstLoadInit() {
     await getBackgrounds();
     await initTokenizers();
     initBackgrounds();
+    initVoiceAudioDrawer();
     initAuthorsNote();
     await initPersonas();
     initWorldInfo();
@@ -7057,6 +7059,7 @@ export async function getSettings() {
 
         // Load background
         loadBackgroundSettings(settings);
+        loadVoiceAudioSettings(settings.voice_audio ?? {});
 
         // Load proxy presets
         loadProxyPresets(settings);
