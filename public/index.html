@@ -4999,6 +4999,58 @@
                             </div>
                         </div>
                     </div>
+                    <div class="flex-container flexFlowColumn" id="supertavern-topics">
+                        <h3>AI Topics System</h3>
+                        <p>Inject spontaneous themes into the prompt so every reply can explore a fresh angle.</p>
+                        <label class="checkbox_label">
+                            <input type="checkbox" data-supertavern-setting="topics.enabled">
+                            <small>Enable topic cues during generation</small>
+                        </label>
+                        <div class="supertavern-topics-controls" data-supertavern-requires="topics.enabled">
+                            <div class="supertavern-topics-grid">
+                                <label class="supertavern-topics-field">
+                                    <span>Selection mode</span>
+                                    <select id="supertavern-topics-mode" data-supertavern-setting="topics.mode" class="text_pole">
+                                        <option value="random">Random</option>
+                                        <option value="sequential">Sequential</option>
+                                        <option value="weighted">Weighted</option>
+                                    </select>
+                                </label>
+                                <label class="supertavern-topics-field">
+                                    <span>Inject every</span>
+                                    <div class="supertavern-topics-frequency">
+                                        <input id="supertavern-topics-frequency" type="number" min="1" max="20" step="1" data-supertavern-setting="topics.frequency" class="text_pole" />
+                                        <span>messages</span>
+                                    </div>
+                                </label>
+                                <label class="supertavern-topics-field">
+                                    <span>Blend style</span>
+                                    <select id="supertavern-topics-blend" data-supertavern-setting="topics.blend" class="text_pole">
+                                        <option value="directive">Directive</option>
+                                        <option value="hint">Conversational hint</option>
+                                    </select>
+                                </label>
+                                <label class="supertavern-topics-field">
+                                    <span>Inject as</span>
+                                    <select id="supertavern-topics-placement" data-supertavern-setting="topics.placement" class="text_pole">
+                                        <option value="system">System instruction</option>
+                                        <option value="user">Append to last user message</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="supertavern-topics-actions">
+                                <button type="button" id="supertavern-topics-add" class="menu_button"><i class="fa-solid fa-plus"></i> Add list</button>
+                                <button type="button" id="supertavern-topics-import" class="menu_button"><i class="fa-solid fa-file-arrow-up"></i> Import</button>
+                                <button type="button" id="supertavern-topics-export" class="menu_button"><i class="fa-solid fa-download"></i> Export</button>
+                                <input type="file" id="supertavern-topics-import-input" accept=".txt,.csv,.json" hidden />
+                            </div>
+                            <div id="supertavern-topics-lists" class="supertavern-topics-lists" role="list" aria-live="polite"></div>
+                            <div class="supertavern-topics-recent">
+                                <h4>Recent injections</h4>
+                                <ul id="supertavern-topics-recent-list"></ul>
+                            </div>
+                        </div>
+                    </div>
                     <div class="flex-container flexFlowColumn">
                         <h3>Advanced Customization</h3>
                         <p>Drive dynamic themes and procedural layouts that respond to collaboration.</p>

@@ -263,6 +263,7 @@ import {
     initializeSuperTavernUI,
     loadSuperTavernState,
     getSuperTavernState,
+    maybeGetTopicPrompt,
 } from './scripts/supertavern-settings.js';
 import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
@@ -3883,6 +3884,53 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 // Add +1 to the elements to correct for the new PHI/Jailbreak message.
                 injectedIndices.forEach((e, idx) => injectedIndices[idx] = e + 1);
             }
+        }
+    }
+
+    const topicDirective = maybeGetTopicPrompt({ simulate: dryRun });
+    if (topicDirective) {
+        const cueLabel = topicDirective.listName ? `Topic cue (${topicDirective.listName}) — ` : 'Topic cue — ';
+        const cueText = `${cueLabel}${topicDirective.directive}`;
+        let injected = false;
+
+        if (topicDirective.placement === 'user' && !isInstruct) {
+            let lastUserIndex = -1;
+            for (let index = coreChat.length - 1; index >= 0; index--) {
+                if (coreChat[index]?.is_user) {
+                    lastUserIndex = index;
+                    break;
+                }
+            }
+
+            if (lastUserIndex >= 0) {
+                const target = coreChat[lastUserIndex];
+                const suffix = target.mes?.endsWith('\n') ? '' : '\n';
+                target.mes = `${target.mes ?? ''}${suffix}\n${cueText}`;
+                target.extra = {
+                    ...target.extra,
+                    aiTopics: {
+                        topic: topicDirective.topic,
+                        list: topicDirective.listName,
+                    },
+                };
+                injected = true;
+            }
+        }
+
+        if (!injected) {
+            coreChat.push({
+                name: systemUserName,
+                mes: cueText,
+                is_user: false,
+                is_system: true,
+                extra: {
+                    type: system_message_types.NARRATOR,
+                    aiTopics: {
+                        topic: topicDirective.topic,
+                        list: topicDirective.listName,
+                    },
+                },
+            });
         }
     }
 

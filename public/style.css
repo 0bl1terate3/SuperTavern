@@ -6628,6 +6628,156 @@ input[data-supertavern-setting="jokeGenerator.enabled"]:checked + [data-supertav
     display: block;
 }
 
+#supertavern-topics {
+    gap: 0.75rem;
+}
+
+.supertavern-topics-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.12));
+    border-radius: 12px;
+    background: rgba(20, 26, 46, 0.35);
+    backdrop-filter: blur(6px);
+}
+
+.supertavern-topics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.supertavern-topics-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+}
+
+.supertavern-topics-frequency {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.supertavern-topics-frequency input {
+    max-width: 80px;
+}
+
+.supertavern-topics-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.supertavern-topics-lists {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.supertavern-topic-card {
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.14));
+    border-radius: 10px;
+    background: rgba(8, 13, 30, 0.55);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.supertavern-topic-card header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.supertavern-topic-card header label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.supertavern-topic-card header button {
+    gap: 0.35rem;
+}
+
+.supertavern-topic-card textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.supertavern-topic-card .supertavern-topic-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.supertavern-topic-card .supertavern-topic-weight {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+#supertavern-topics[data-mode="weighted"] .supertavern-topic-card .supertavern-topic-weight {
+    display: inline-flex;
+}
+
+.supertavern-topic-count {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.supertavern-topic-card[data-active="true"] {
+    border-color: rgba(134, 205, 255, 0.6);
+    box-shadow: 0 0 0 1px rgba(134, 205, 255, 0.35);
+}
+
+.supertavern-topics-empty {
+    padding: 1rem;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+.supertavern-topics-recent ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.supertavern-topics-recent li {
+    list-style: disc;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+.supertavern-topics-recent li time {
+    font-size: 0.8rem;
+    margin-left: 0.35rem;
+    opacity: 0.65;
+}
+
+@media (max-width: 720px) {
+    .supertavern-topics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .supertavern-topics-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
 .joke-generator-button {
     background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
     background-size: 300% 300%;
