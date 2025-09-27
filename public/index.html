@@ -4999,6 +4999,58 @@
                             </div>
                         </div>
                     </div>
+                    <div class="flex-container flexFlowColumn" id="supertavern-topics">
+                        <h3>AI Topics System</h3>
+                        <p>Inject spontaneous themes into the prompt so every reply can explore a fresh angle.</p>
+                        <label class="checkbox_label">
+                            <input type="checkbox" data-supertavern-setting="topics.enabled">
+                            <small>Enable topic cues during generation</small>
+                        </label>
+                        <div class="supertavern-topics-controls" data-supertavern-requires="topics.enabled">
+                            <div class="supertavern-topics-grid">
+                                <label class="supertavern-topics-field">
+                                    <span>Selection mode</span>
+                                    <select id="supertavern-topics-mode" data-supertavern-setting="topics.mode" class="text_pole">
+                                        <option value="random">Random</option>
+                                        <option value="sequential">Sequential</option>
+                                        <option value="weighted">Weighted</option>
+                                    </select>
+                                </label>
+                                <label class="supertavern-topics-field">
+                                    <span>Inject every</span>
+                                    <div class="supertavern-topics-frequency">
+                                        <input id="supertavern-topics-frequency" type="number" min="1" max="20" step="1" data-supertavern-setting="topics.frequency" class="text_pole" />
+                                        <span>messages</span>
+                                    </div>
+                                </label>
+                                <label class="supertavern-topics-field">
+                                    <span>Blend style</span>
+                                    <select id="supertavern-topics-blend" data-supertavern-setting="topics.blend" class="text_pole">
+                                        <option value="directive">Directive</option>
+                                        <option value="hint">Conversational hint</option>
+                                    </select>
+                                </label>
+                                <label class="supertavern-topics-field">
+                                    <span>Inject as</span>
+                                    <select id="supertavern-topics-placement" data-supertavern-setting="topics.placement" class="text_pole">
+                                        <option value="system">System instruction</option>
+                                        <option value="user">Append to last user message</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="supertavern-topics-actions">
+                                <button type="button" id="supertavern-topics-add" class="menu_button"><i class="fa-solid fa-plus"></i> Add list</button>
+                                <button type="button" id="supertavern-topics-import" class="menu_button"><i class="fa-solid fa-file-arrow-up"></i> Import</button>
+                                <button type="button" id="supertavern-topics-export" class="menu_button"><i class="fa-solid fa-download"></i> Export</button>
+                                <input type="file" id="supertavern-topics-import-input" accept=".txt,.csv,.json" hidden />
+                            </div>
+                            <div id="supertavern-topics-lists" class="supertavern-topics-lists" role="list" aria-live="polite"></div>
+                            <div class="supertavern-topics-recent">
+                                <h4>Recent injections</h4>
+                                <ul id="supertavern-topics-recent-list"></ul>
+                            </div>
+                        </div>
+                    </div>
                     <div class="flex-container flexFlowColumn">
                         <h3>Advanced Customization</h3>
                         <p>Drive dynamic themes and procedural layouts that respond to collaboration.</p>
@@ -5017,6 +5069,336 @@
                             </ul>
                         </div>
                     </div>
+                </div>
+        </div>
+    </div>
+        <div id="fine-tuning-button" class="drawer">
+            <div class="drawer-toggle">
+                <div class="drawer-icon fa-solid fa-flask-vial fa-fw closedIcon" title="Fine-Tuning Studio" data-i18n="[title]Fine-Tuning Studio"></div>
+            </div>
+            <div id="fine-tuning-studio" class="drawer-content closedDrawer">
+                <div class="fine-tuning-panel">
+                    <div class="fine-tuning-grid">
+                        <section class="fine-tuning-card" aria-labelledby="fine-tuning-datasets-heading">
+                            <div class="fine-tuning-card__header">
+                                <h3 id="fine-tuning-datasets-heading">Dataset Manager</h3>
+                                <p>Organize training corpora, inspect samples, and prepare chat-style role tags before running a job.</p>
+                            </div>
+                            <div class="fine-tuning-dropzone" id="fine-tuning-dropzone" role="button" tabindex="0" aria-describedby="fine-tuning-dropzone-help">
+                                <input id="fine-tuning-dataset-input" type="file" accept=".jsonl,.csv,.txt" multiple hidden>
+                                <div class="fine-tuning-dropzone__content">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <div>
+                                        <strong>Drop datasets here</strong>
+                                        <p id="fine-tuning-dropzone-help">Supported formats: JSONL, CSV, TXT</p>
+                                    </div>
+                                    <button id="fine-tuning-dataset-browse" type="button" class="menu_button">Browse</button>
+                                </div>
+                            </div>
+                            <div class="fine-tuning-toolbar">
+                                <div class="fine-tuning-toolbar__group">
+                                    <label class="checkbox_label">
+                                        <input id="fine-tuning-filter-invalid" type="checkbox" data-fine-tuning-filter="invalid" checked>
+                                        <span>Hide invalid rows</span>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input id="fine-tuning-filter-unassigned" type="checkbox" data-fine-tuning-filter="unassigned">
+                                        <span>Highlight entries without roles</span>
+                                    </label>
+                                </div>
+                                <div class="fine-tuning-toolbar__group">
+                                    <label for="fine-tuning-recipe" class="fine-tuning-toolbar__label">Preset recipe</label>
+                                    <select id="fine-tuning-recipe" class="text_pole">
+                                        <option value="custom">Custom configuration</option>
+                                        <option value="roleplay-lora">Roleplay LoRA</option>
+                                        <option value="summarization-lora">Summarization LoRA</option>
+                                        <option value="support-agent">Support Agent Adapter</option>
+                                        <option value="sandbox">Sandbox Quickstart</option>
+                                    </select>
+                                    <button id="fine-tuning-apply-recipe" type="button" class="menu_button">Apply</button>
+                                </div>
+                            </div>
+                            <div class="fine-tuning-dataset-summary" aria-live="polite">
+                                <span id="fine-tuning-dataset-count">0 files selected</span>
+                                <span id="fine-tuning-token-estimate">Tokens: &mdash;</span>
+                                <span id="fine-tuning-role-balance">Role balance: &mdash;</span>
+                            </div>
+                            <div class="fine-tuning-table-wrapper">
+                                <table class="fine-tuning-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Dataset</th>
+                                            <th scope="col">Type</th>
+                                            <th scope="col">Size</th>
+                                            <th scope="col">Role</th>
+                                            <th scope="col">Status</th>
+                                            <th scope="col" class="textAlignRight">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fine-tuning-dataset-table">
+                                        <tr class="fine-tuning-table__empty">
+                                            <td colspan="6">Upload datasets to get started.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="fine-tuning-dataset-preview" class="fine-tuning-preview" hidden>
+                                <header>
+                                    <div>
+                                        <h4 id="fine-tuning-preview-title">Preview</h4>
+                                        <p id="fine-tuning-preview-meta"></p>
+                                    </div>
+                                    <button type="button" id="fine-tuning-preview-close" class="menu_button">Close</button>
+                                </header>
+                                <pre id="fine-tuning-preview-content"></pre>
+                            </div>
+                        </section>
+                        <section class="fine-tuning-card" aria-labelledby="fine-tuning-config-heading">
+                            <div class="fine-tuning-card__header">
+                                <h3 id="fine-tuning-config-heading">Training Configuration</h3>
+                                <p>Select a base model, fine-tuning strategy, and hardware optimizations.</p>
+                            </div>
+                            <form id="fine-tuning-config" class="fine-tuning-form" autocomplete="off">
+                                <div class="fine-tuning-form__field">
+                                    <label for="fine-tuning-base-model">Base model</label>
+                                    <select id="fine-tuning-base-model" class="text_pole">
+                                        <option value="llama-2-7b">LLaMA&nbsp;2&nbsp;7B</option>
+                                        <option value="llama-3-8b">LLaMA&nbsp;3&nbsp;8B</option>
+                                        <option value="mistral-7b">Mistral&nbsp;7B</option>
+                                        <option value="mixtral-8x7b">Mixtral&nbsp;8x7B</option>
+                                        <option value="gpt-neox-20b">GPT-NeoX&nbsp;20B</option>
+                                        <option value="phi-3-mini">Phi-3 Mini</option>
+                                        <option value="custom">Custom / External</option>
+                                    </select>
+                                </div>
+                                <div class="fine-tuning-form__field">
+                                    <label for="fine-tuning-model-source">Model path or endpoint</label>
+                                    <input id="fine-tuning-model-source" class="text_pole" type="text" placeholder="./models/llama-2-7b" />
+                                </div>
+                                <div class="fine-tuning-form__field">
+                                    <label for="fine-tuning-strategy">Fine-tuning method</label>
+                                    <select id="fine-tuning-strategy" class="text_pole">
+                                        <option value="lora">LoRA</option>
+                                        <option value="qlora">QLoRA</option>
+                                        <option value="full">Full fine-tune</option>
+                                        <option value="adapters">Embedding adapters</option>
+                                    </select>
+                                </div>
+                                <fieldset class="fine-tuning-form__fieldset">
+                                    <legend>Hyperparameters</legend>
+                                    <div class="fine-tuning-form__grid">
+                                        <label>Learning rate
+                                            <input id="fine-tuning-learning-rate" name="learningRate" class="text_pole" type="number" step="0.00001" min="0.000001" max="1" value="0.0001">
+                                        </label>
+                                        <label>Epochs
+                                            <input id="fine-tuning-epochs" name="epochs" class="text_pole" type="number" min="1" max="50" value="3">
+                                        </label>
+                                        <label>Batch size
+                                            <input id="fine-tuning-batch-size" name="batchSize" class="text_pole" type="number" min="1" max="512" value="16">
+                                        </label>
+                                        <label>Gradient accumulation
+                                            <input id="fine-tuning-grad-accum" name="gradAccum" class="text_pole" type="number" min="1" max="128" value="4">
+                                        </label>
+                                        <label>LoRA rank
+                                            <input id="fine-tuning-lora-rank" name="loraRank" class="text_pole" type="number" min="1" max="256" value="32">
+                                        </label>
+                                        <label>LoRA α
+                                            <input id="fine-tuning-lora-alpha" name="loraAlpha" class="text_pole" type="number" min="1" max="256" value="16">
+                                        </label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="fine-tuning-form__fieldset">
+                                    <legend>Optimizations</legend>
+                                    <label class="checkbox_label">
+                                        <input id="fine-tuning-mixed-precision" type="checkbox" checked>
+                                        <span>Use mixed precision (fp16/bf16)</span>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input id="fine-tuning-gradient-checkpointing" type="checkbox" checked>
+                                        <span>Enable gradient checkpointing</span>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input id="fine-tuning-accelerate" type="checkbox" checked>
+                                        <span>Launch with 🤗 Accelerate</span>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input id="fine-tuning-quantization-8bit" type="checkbox">
+                                        <span>Load base weights in 8-bit</span>
+                                    </label>
+                                    <label class="checkbox_label">
+                                        <input id="fine-tuning-quantization-4bit" type="checkbox">
+                                        <span>Load base weights in 4-bit (QLoRA)</span>
+                                    </label>
+                                </fieldset>
+                                <div class="fine-tuning-form__actions">
+                                    <button id="fine-tuning-start" type="button" class="menu_button fa-solid fa-play"> Start training</button>
+                                    <button id="fine-tuning-stop" type="button" class="menu_button fa-solid fa-stop" disabled> Stop</button>
+                                    <button id="fine-tuning-save-config" type="button" class="menu_button fa-solid fa-download"> Export config</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                    <div class="fine-tuning-grid">
+                        <section class="fine-tuning-card" aria-labelledby="fine-tuning-dashboard-heading">
+                            <div class="fine-tuning-card__header">
+                                <h3 id="fine-tuning-dashboard-heading">Training Dashboard</h3>
+                                <p>Monitor progress, throughput, and hardware utilization in real time.</p>
+                            </div>
+                            <div class="fine-tuning-progress">
+                                <label for="fine-tuning-progress-bar">Overall progress</label>
+                                <progress id="fine-tuning-progress-bar" value="0" max="100">0%</progress>
+                                <span id="fine-tuning-progress-label">Idle</span>
+                            </div>
+                            <dl class="fine-tuning-metrics">
+                                <div>
+                                    <dt>Train loss</dt>
+                                    <dd id="fine-tuning-metric-train-loss">&mdash;</dd>
+                                </div>
+                                <div>
+                                    <dt>Validation loss</dt>
+                                    <dd id="fine-tuning-metric-val-loss">&mdash;</dd>
+                                </div>
+                                <div>
+                                    <dt>Accuracy</dt>
+                                    <dd id="fine-tuning-metric-accuracy">&mdash;</dd>
+                                </div>
+                                <div>
+                                    <dt>Token throughput</dt>
+                                    <dd id="fine-tuning-metric-throughput">&mdash;</dd>
+                                </div>
+                            </dl>
+                            <div class="fine-tuning-hardware">
+                                <div>
+                                    <label for="fine-tuning-gpu-usage">GPU utilization</label>
+                                    <progress id="fine-tuning-gpu-usage" value="0" max="100">0%</progress>
+                                </div>
+                                <div>
+                                    <label for="fine-tuning-cpu-usage">CPU utilization</label>
+                                    <progress id="fine-tuning-cpu-usage" value="0" max="100">0%</progress>
+                                </div>
+                                <div>
+                                    <label for="fine-tuning-memory-usage">VRAM usage</label>
+                                    <progress id="fine-tuning-memory-usage" value="0" max="100">0%</progress>
+                                </div>
+                            </div>
+                            <div class="fine-tuning-chart" aria-hidden="true">
+                                <p>Loss curves render here once training begins.</p>
+                            </div>
+                            <div class="fine-tuning-log" role="log" aria-live="polite" aria-atomic="false">
+                                <header>
+                                    <h4>Training logs</h4>
+                                    <button id="fine-tuning-clear-log" type="button" class="menu_button">Clear</button>
+                                </header>
+                                <div id="fine-tuning-training-log" class="fine-tuning-log__scroller"></div>
+                            </div>
+                        </section>
+                        <section class="fine-tuning-card" aria-labelledby="fine-tuning-checkpoints-heading">
+                            <div class="fine-tuning-card__header">
+                                <h3 id="fine-tuning-checkpoints-heading">Checkpoint Manager</h3>
+                                <p>Capture LoRA adapters or full snapshots and roll back whenever needed.</p>
+                            </div>
+                            <div class="fine-tuning-checkpoint-controls">
+                                <label class="checkbox_label">
+                                    <input id="fine-tuning-auto-resume" type="checkbox" checked>
+                                    <span>Auto-resume from last checkpoint</span>
+                                </label>
+                                <label for="fine-tuning-save-interval">Save every</label>
+                                <select id="fine-tuning-save-interval" class="text_pole">
+                                    <option value="500">500 steps</option>
+                                    <option value="1000" selected>1,000 steps</option>
+                                    <option value="2000">2,000 steps</option>
+                                    <option value="epoch">Each epoch</option>
+                                </select>
+                                <button id="fine-tuning-create-checkpoint" type="button" class="menu_button">Save now</button>
+                            </div>
+                            <ul id="fine-tuning-checkpoint-list" class="fine-tuning-checkpoint-list" aria-live="polite">
+                                <li class="fine-tuning-checkpoint-list__empty">No checkpoints yet.</li>
+                            </ul>
+                            <div class="fine-tuning-checkpoint-actions">
+                                <button id="fine-tuning-export-adapter" type="button" class="menu_button fa-solid fa-share-from-square"> Export LoRA adapter</button>
+                                <button id="fine-tuning-download-full" type="button" class="menu_button fa-solid fa-file-zipper"> Download merged model</button>
+                            </div>
+                            <div class="fine-tuning-deployment">
+                                <h4>Deploy to SuperTavern</h4>
+                                <p>Publish the trained adapter to the Model Hub for immediate use in chats.</p>
+                                <button id="fine-tuning-deploy" type="button" class="menu_button fa-solid fa-rocket"> Deploy</button>
+                                <div id="fine-tuning-deployment-status" aria-live="polite"></div>
+                            </div>
+                        </section>
+                    </div>
+                    <section class="fine-tuning-card" aria-labelledby="fine-tuning-workflow-heading">
+                        <div class="fine-tuning-card__header">
+                            <h3 id="fine-tuning-workflow-heading">Workflow guidance</h3>
+                            <p>Use this checklist to get from raw data to a deployable adapter.</p>
+                        </div>
+                        <ol class="fine-tuning-workflow">
+                            <li>Upload a conversation dataset (JSONL, CSV, or TXT) and spot-check samples.</li>
+                            <li>Assign roles for chat-style records (system, user, assistant) and apply optional filters.</li>
+                            <li>Select the base model (local path or API endpoint) and choose LoRA, QLoRA, or full fine-tune.</li>
+                            <li>Configure hyperparameters, enable mixed precision, and review quantization preferences.</li>
+                            <li>Launch training, monitor live metrics, and collect checkpoints as they are produced.</li>
+                            <li>Download adapters or merged weights, evaluate them, and deploy directly into SuperTavern.</li>
+                        </ol>
+                    </section>
+                    <section class="fine-tuning-card" aria-labelledby="fine-tuning-extras-heading">
+                        <div class="fine-tuning-card__header">
+                            <h3 id="fine-tuning-extras-heading">Extras &amp; evaluation</h3>
+                            <p>Accelerate iteration with recipes, augmentation, and built-in test suites.</p>
+                        </div>
+                        <div class="fine-tuning-extras">
+                            <div>
+                                <h4>Preset recipes</h4>
+                                <ul>
+                                    <li><strong>Roleplay LoRA</strong> &mdash; conversational flair with quick adapters.</li>
+                                    <li><strong>Summarization LoRA</strong> &mdash; tight output control with high accuracy.</li>
+                                    <li><strong>Support Agent</strong> &mdash; adds retrieval-style prompts and guardrails.</li>
+                                    <li><strong>Sandbox Quickstart</strong> &mdash; 5-minute loop for rapid experiments.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4>Data augmentation</h4>
+                                <p>Use paraphrasing, persona balancing, or profanity filtering before training.</p>
+                                <label class="checkbox_label">
+                                    <input id="fine-tuning-augmentation-paraphrase" type="checkbox">
+                                    <span>Enable paraphrase augmentation</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input id="fine-tuning-augmentation-balance" type="checkbox">
+                                    <span>Balance long and short exchanges</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input id="fine-tuning-augmentation-filter" type="checkbox">
+                                    <span>Filter sensitive content automatically</span>
+                                </label>
+                            </div>
+                            <div>
+                                <h4>Evaluation suite</h4>
+                                <p>Benchmark against BLEU, ROUGE, and perplexity before deployment.</p>
+                                <div class="fine-tuning-eval">
+                                    <button id="fine-tuning-run-eval" type="button" class="menu_button">Run evaluation</button>
+                                    <dl>
+                                        <div>
+                                            <dt>BLEU</dt>
+                                            <dd id="fine-tuning-metric-bleu">&mdash;</dd>
+                                        </div>
+                                        <div>
+                                            <dt>ROUGE-L</dt>
+                                            <dd id="fine-tuning-metric-rouge">&mdash;</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Perplexity</dt>
+                                            <dd id="fine-tuning-metric-ppl">&mdash;</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+                            <div>
+                                <h4>Sharing hub</h4>
+                                <p>Export adapters with metadata and share them across your team.</p>
+                                <button id="fine-tuning-share" type="button" class="menu_button">Create shareable bundle</button>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
@@ -7237,6 +7619,10 @@
                         </summary>
                         <div class="mes_reasoning"></div>
                     </details>
+                    <div class="mes_topics_badge" hidden>
+                        <span class="mes_topics_icon" aria-hidden="true">🎯</span>
+                        <span class="mes_topics_label"></span>
+                    </div>
                     <div class="mes_text"></div>
                     <div class="mes_img_container">
                         <div class="mes_img_controls">
@@ -7955,6 +8341,7 @@
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/i18n.js"></script>
+    <script type="module" src="scripts/fine-tuning-studio.js"></script>
     <script type="module" src="script.js"></script>
     <script type="module" src="scripts/random-character-generator.js"></script>
     <script>
