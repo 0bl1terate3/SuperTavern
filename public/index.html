@@ -5070,8 +5070,140 @@
                         </div>
                     </div>
                 </div>
+          </div>
+      </div>
+        <div id="voice-audio-button" class="drawer">
+            <div class="drawer-toggle">
+                <div class="drawer-icon fa-solid fa-microphone fa-fw closedIcon" title="Voice &amp; Audio" data-i18n="[title]Voice &amp; Audio"></div>
+            </div>
+            <div id="voice-audio-panel" class="drawer-content closedDrawer">
+                <div class="voice-audio-settings flex-container flexFlowColumn wide100p flex1">
+                    <div>
+                        <h3 data-i18n="Voice &amp; Audio">Voice &amp; Audio</h3>
+                        <p data-i18n="VoiceAudioIntro">Bring conversations to life with real-time speech, ambient soundscapes, and expressive character voices.</p>
+                    </div>
+                    <div class="voice-audio-grid">
+                        <section class="voice-audio-card">
+                            <header class="voice-audio-card__header">
+                                <h4 data-i18n="Text-to-Speech">Text-to-Speech</h4>
+                                <p data-i18n="VoiceAudioTTSDescription">Narrate AI responses instantly with synchronized playback controls.</p>
+                            </header>
+                            <label class="checkbox_label" for="voice_audio_tts_enabled" title="Enable narration of AI responses" data-i18n="[title]Enable narration of AI responses">
+                                <input type="checkbox" id="voice_audio_tts_enabled" data-voice-audio-setting="tts.enabled" />
+                                <small data-i18n="Enable text-to-speech">Enable text-to-speech</small>
+                            </label>
+                            <div class="voice-audio-card__controls">
+                                <label class="flex-container flexFlowColumn" for="voice_audio_tts_voice">
+                                    <small data-i18n="Voice preset">Voice preset</small>
+                                    <select id="voice_audio_tts_voice" class="text_pole" data-voice-audio-setting="tts.voice">
+                                        <option value="narrator" data-i18n="Narrator">Narrator</option>
+                                        <option value="warm" data-i18n="Warm">Warm</option>
+                                        <option value="dramatic" data-i18n="Dramatic">Dramatic</option>
+                                        <option value="robotic" data-i18n="Robotic">Robotic</option>
+                                    </select>
+                                </label>
+                                <div class="voice-audio-card__actions">
+                                    <button id="voice_audio_tts_preview" class="menu_button" type="button" title="Preview current narration voice" data-i18n="[title]Preview current narration voice"><i class="fa-solid fa-play"></i> <span data-i18n="Preview">Preview</span></button>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="voice-audio-card">
+                            <header class="voice-audio-card__header">
+                                <h4 data-i18n="Voice Input">Voice Input</h4>
+                                <p data-i18n="VoiceAudioInputDescription">Capture spoken prompts with push-to-talk or continuous listening.</p>
+                            </header>
+                            <label class="checkbox_label" for="voice_audio_input_enabled" title="Enable microphone capture for composing messages" data-i18n="[title]Enable microphone capture for composing messages">
+                                <input type="checkbox" id="voice_audio_input_enabled" data-voice-audio-setting="input.enabled" />
+                                <small data-i18n="Enable voice input">Enable voice input</small>
+                            </label>
+                            <div class="voice-audio-card__controls">
+                                <div class="flex-container gap5 alignitemscenter">
+                                    <label class="checkbox_label" for="voice_audio_input_ptt" title="Use push-to-talk instead of continuous capture" data-i18n="[title]Use push-to-talk instead of continuous capture">
+                                        <input type="checkbox" id="voice_audio_input_ptt" data-voice-audio-setting="input.pushToTalk" />
+                                        <small data-i18n="Push-to-talk mode">Push-to-talk mode</small>
+                                    </label>
+                                </div>
+                                <div class="voice-audio-card__actions">
+                                    <button id="voice_audio_input_calibrate" class="menu_button" type="button" title="Calibrate microphone levels" data-i18n="[title]Calibrate microphone levels"><i class="fa-solid fa-sliders"></i> <span data-i18n="Calibrate">Calibrate</span></button>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="voice-audio-card">
+                            <header class="voice-audio-card__header">
+                                <h4 data-i18n="Audio Backgrounds">Audio Backgrounds</h4>
+                                <p data-i18n="VoiceAudioBackgroundDescription">Generate adaptive ambience that matches the scene.</p>
+                            </header>
+                            <label class="checkbox_label" for="voice_audio_background_enabled" title="Enable dynamic ambient audio" data-i18n="[title]Enable dynamic ambient audio">
+                                <input type="checkbox" id="voice_audio_background_enabled" data-voice-audio-setting="background.enabled" />
+                                <small data-i18n="Enable background soundscapes">Enable background soundscapes</small>
+                            </label>
+                            <div class="voice-audio-card__controls">
+                                <label class="flex-container flexFlowColumn" for="voice_audio_background_style">
+                                    <small data-i18n="Scene style">Scene style</small>
+                                    <select id="voice_audio_background_style" class="text_pole" data-voice-audio-setting="background.style">
+                                        <option value="tavern" data-i18n="Cozy tavern">Cozy tavern</option>
+                                        <option value="sci-fi" data-i18n="Sci-fi bridge">Sci-fi bridge</option>
+                                        <option value="forest" data-i18n="Enchanted forest">Enchanted forest</option>
+                                        <option value="storm" data-i18n="Thunderstorm">Thunderstorm</option>
+                                    </select>
+                                </label>
+                                <div class="voice-audio-card__actions">
+                                    <button id="voice_audio_background_preview" class="menu_button" type="button" title="Preview the selected ambience" data-i18n="[title]Preview the selected ambience"><i class="fa-solid fa-headphones"></i> <span data-i18n="Preview">Preview</span></button>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="voice-audio-card">
+                            <header class="voice-audio-card__header">
+                                <h4 data-i18n="Character Voices">Character Voices</h4>
+                                <p data-i18n="VoiceAudioCharacterDescription">Assign unique voice profiles to each persona.</p>
+                            </header>
+                            <label class="checkbox_label" for="voice_audio_character_sync" title="Match voices with character traits" data-i18n="[title]Match voices with character traits">
+                                <input type="checkbox" id="voice_audio_character_sync" data-voice-audio-setting="characters.sync" />
+                                <small data-i18n="Auto-sync voice with character">Auto-sync voice with character</small>
+                            </label>
+                            <div class="voice-audio-card__controls">
+                                <label class="flex-container flexFlowColumn" for="voice_audio_character_profile">
+                                    <small data-i18n="Default voice profile">Default voice profile</small>
+                                    <select id="voice_audio_character_profile" class="text_pole" data-voice-audio-setting="characters.defaultProfile">
+                                        <option value="storyteller" data-i18n="Storyteller">Storyteller</option>
+                                        <option value="heroic" data-i18n="Heroic">Heroic</option>
+                                        <option value="mysterious" data-i18n="Mysterious">Mysterious</option>
+                                        <option value="playful" data-i18n="Playful">Playful</option>
+                                    </select>
+                                </label>
+                                <div class="voice-audio-card__actions">
+                                    <button id="voice_audio_character_customize" class="menu_button" type="button" title="Open character voice customization" data-i18n="[title]Open character voice customization"><i class="fa-solid fa-user-gear"></i> <span data-i18n="Customize">Customize</span></button>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="voice-audio-card">
+                            <header class="voice-audio-card__header">
+                                <h4 data-i18n="Audio Mood">Audio Mood</h4>
+                                <p data-i18n="VoiceAudioMoodDescription">Set the emotional tone that guides TTS and ambience together.</p>
+                            </header>
+                            <label class="checkbox_label" for="voice_audio_mood_link" title="Synchronize mood across all voice systems" data-i18n="[title]Synchronize mood across all voice systems">
+                                <input type="checkbox" id="voice_audio_mood_link" data-voice-audio-setting="mood.sync" />
+                                <small data-i18n="Link mood to scene">Link mood to scene</small>
+                            </label>
+                            <div class="voice-audio-card__controls">
+                                <label class="flex-container flexFlowColumn" for="voice_audio_mood_setting">
+                                    <small data-i18n="Mood preset">Mood preset</small>
+                                    <select id="voice_audio_mood_setting" class="text_pole" data-voice-audio-setting="mood.preset">
+                                        <option value="serene" data-i18n="Serene">Serene</option>
+                                        <option value="tense" data-i18n="Tense">Tense</option>
+                                        <option value="romantic" data-i18n="Romantic">Romantic</option>
+                                        <option value="mystic" data-i18n="Mystic">Mystic</option>
+                                    </select>
+                                </label>
+                                <div class="voice-audio-card__actions">
+                                    <button id="voice_audio_mood_sync" class="menu_button" type="button" title="Synchronize the selected mood across audio systems" data-i18n="[title]Synchronize the selected mood across audio systems"><i class="fa-solid fa-waveform"></i> <span data-i18n="Sync mood">Sync mood</span></button>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
         <div id="fine-tuning-button" class="drawer">
             <div class="drawer-toggle">
                 <div class="drawer-icon fa-solid fa-flask-vial fa-fw closedIcon" title="Fine-Tuning Studio" data-i18n="[title]Fine-Tuning Studio"></div>
