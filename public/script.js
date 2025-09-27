@@ -3936,9 +3936,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     const topicDirective = maybeGetTopicPrompt({ simulate: dryRun });
     if (topicDirective) {
-        const cueLabel = topicDirective.listName ? `Topic cue (${topicDirective.listName}) — ` : 'Topic cue — ';
-        const cueText = `${cueLabel}${topicDirective.directive}`;
+        const directiveText = topicDirective.directive;
         let injected = false;
+        let placementApplied = topicDirective.placement ?? 'system';
 
         if (topicDirective.placement === 'user' && !isInstruct) {
             let lastUserIndex = -1;
@@ -3952,32 +3952,44 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             if (lastUserIndex >= 0) {
                 const target = coreChat[lastUserIndex];
                 const suffix = target.mes?.endsWith('\n') ? '' : '\n';
-                target.mes = `${target.mes ?? ''}${suffix}\n${cueText}`;
+                target.mes = `${target.mes ?? ''}${suffix}\n${directiveText}`;
                 target.extra = {
                     ...target.extra,
                     aiTopics: {
                         topic: topicDirective.topic,
-                        list: topicDirective.listName,
+                        listName: topicDirective.listName,
+                        directive: directiveText,
+                        placement: 'user',
                     },
                 };
                 injected = true;
+                placementApplied = 'user';
             }
         }
 
         if (!injected) {
+            placementApplied = 'system';
             coreChat.push({
                 name: systemUserName,
-                mes: cueText,
+                mes: directiveText,
                 is_user: false,
                 is_system: true,
                 extra: {
                     type: system_message_types.NARRATOR,
                     aiTopics: {
                         topic: topicDirective.topic,
-                        list: topicDirective.listName,
+                        listName: topicDirective.listName,
+                        directive: directiveText,
+                        placement: placementApplied,
                     },
                 },
             });
+        }
+    } else {
+        for (const message of coreChat) {
+            if (message?.extra?.aiTopics) {
+                delete message.extra.aiTopics;
+            }
         }
     }
 
