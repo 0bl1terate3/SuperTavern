@@ -264,6 +264,7 @@ import {
     loadSuperTavernState,
     getSuperTavernState,
     maybeGetTopicPrompt,
+    consumeTopicDirective,
 } from './scripts/supertavern-settings.js';
 import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
@@ -1825,6 +1826,48 @@ function getMessageFromTemplate({
     return mes;
 }
 
+function applyTopicBadge(messageElement, topicInfo) {
+    if (!messageElement?.length) {
+        return;
+    }
+
+    const badge = messageElement.find('.mes_topics_badge');
+    if (!badge.length) {
+        return;
+    }
+
+    const label = badge.find('.mes_topics_label');
+
+    if (!topicInfo || !topicInfo.topic) {
+        badge.attr('hidden', 'hidden');
+        badge.removeClass('is-visible');
+        badge.removeAttr('title');
+        badge.removeAttr('data-placement');
+        label.text('');
+        return;
+    }
+
+    const topicText = String(topicInfo.topic).trim();
+    const listName = topicInfo.listName ? String(topicInfo.listName).trim() : '';
+    const labelText = listName ? `${topicText} · ${listName}` : topicText;
+
+    label.text(labelText);
+    if (topicInfo.directive) {
+        badge.attr('title', topicInfo.directive);
+    } else {
+        badge.removeAttr('title');
+    }
+
+    if (topicInfo.placement) {
+        badge.attr('data-placement', topicInfo.placement);
+    } else {
+        badge.removeAttr('data-placement');
+    }
+
+    badge.removeAttr('hidden');
+    badge.addClass('is-visible');
+}
+
 /**
  * Re-renders a message block with updated content.
  * @param {number} messageId Message ID
@@ -1843,6 +1886,7 @@ export function updateMessageBlock(messageId, message, { rerenderMessage = true 
 
     addCopyToCodeBlocks(messageElement);
     appendMediaToMessage(message, messageElement);
+    applyTopicBadge(messageElement, message?.extra?.aiTopics);
 }
 
 /**
@@ -2088,6 +2132,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.addClass('toolCall');
     }
 
+    applyTopicBadge(newMessage, mes?.extra?.aiTopics);
+
     //shows or hides the Prompt display button
     let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
 
@@ -2114,6 +2160,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         if (power_user.timestamp_model_icon && params.extra?.api) {
             insertSVGIcon(swipeMessage, params.extra);
         }
+        applyTopicBadge(swipeMessage, mes?.extra?.aiTopics);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
             swipeMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
@@ -4681,9 +4728,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (isImpersonate) {
             $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
+            consumeTopicDirective();
         }
         else if (type == 'quiet') {
             unblockGeneration(type);
+            consumeTopicDirective();
             return getMessage;
         }
         else {
@@ -4757,6 +4806,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         unblockGeneration(type);
         console.log(exception);
         streamingProcessor = null;
+        consumeTopicDirective();
         throw exception;
     }
 }
@@ -4777,6 +4827,7 @@ export function stopGeneration() {
         stopped = true;
     }
     eventSource.emit(event_types.GENERATION_STOPPED);
+    consumeTopicDirective();
     return stopped;
 }
 
@@ -5717,12 +5768,36 @@ async function processImageAttachment(message, { imageUrl }) {
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
+function attachTopicDirectiveToMessage(message, directive) {
+    if (!message) {
+        return;
+    }
+
+    if (!message.extra || typeof message.extra !== 'object') {
+        message.extra = {};
+    }
+
+    if (!directive) {
+        delete message.extra.aiTopics;
+        return;
+    }
+
+    message.extra.aiTopics = {
+        topic: directive.topic,
+        listName: directive.listName ?? null,
+        directive: directive.directive ?? '',
+        placement: directive.placement ?? 'system',
+    };
+}
+
 export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrl = '' }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
         [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl] = arguments;
     }
+
+    const topicDirective = consumeTopicDirective();
 
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
@@ -5757,6 +5832,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             chat[chat.length - 1]['extra']['reasoning'] = reasoning;
             chat[chat.length - 1]['extra']['reasoning_duration'] = null;
+            attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
             await processImageAttachment(chat[chat.length - 1], { imageUrl });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -5768,6 +5844,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
+            attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         }
     } else if (type === 'append' || type === 'continue') {
         console.debug('Trying to append.');
@@ -5782,6 +5859,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
         await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
@@ -5802,6 +5880,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] += reasoning;
         await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -5848,6 +5927,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         }
 
         await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         const chat_id = (chat.length - 1);
 
         !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);

@@ -413,6 +413,39 @@ input[type='checkbox']:focus-visible {
     color: var(--SmartThemeQuoteColor);
 }
 
+.mes_topics_badge {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: var(--grey5020a);
+    background: color-mix(in srgb, var(--SmartThemeQuoteColor) 18%, transparent);
+    color: var(--SmartThemeQuoteColor);
+    font-size: calc(var(--mainFontSize) * 0.82);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    width: fit-content;
+    max-width: 100%;
+    white-space: normal;
+}
+
+.mes_topics_badge.is-visible {
+    display: inline-flex;
+}
+
+.mes_topics_badge .mes_topics_label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mes_topics_icon {
+    font-size: calc(var(--mainFontSize) * 0.82);
+    line-height: 1;
+}
+
 .mes_reasoning {
     display: block;
     border-left: 2px solid var(--reasoning-body-color);

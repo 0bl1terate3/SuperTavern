@@ -115,6 +115,7 @@ const topicRuntime = {
     pending: null,
     pendingCounter: null,
     recent: [],
+    lastDirective: null,
 };
 
 export function configureSuperTavern(newDependencies) {
@@ -1279,6 +1280,7 @@ function resetTopicRuntime() {
     topicRuntime.pending = null;
     topicRuntime.pendingCounter = null;
     topicRuntime.recent = [];
+    topicRuntime.lastDirective = null;
     renderTopicsRecent();
 }
 
@@ -1448,6 +1450,7 @@ export function maybeGetTopicPrompt({ simulate = false } = {}) {
             topicRuntime.pending = null;
             topicRuntime.pendingCounter = null;
         }
+        topicRuntime.lastDirective = null;
         return null;
     }
 
@@ -1457,14 +1460,18 @@ export function maybeGetTopicPrompt({ simulate = false } = {}) {
         topicRuntime.pendingCounter = null;
         topicRuntime.counter = pending?.counterAfter ?? topicRuntime.counter;
         if (!pending?.selection) {
+            topicRuntime.lastDirective = null;
             return null;
         }
         applyTopicSelection(pending.selection);
-        return buildTopicDirective(pending.selection);
+        const directive = buildTopicDirective(pending.selection);
+        topicRuntime.lastDirective = directive;
+        return directive;
     }
 
     const evaluation = evaluateTopicSelection();
     if (!evaluation) {
+        topicRuntime.lastDirective = null;
         return null;
     }
 
@@ -1478,11 +1485,20 @@ export function maybeGetTopicPrompt({ simulate = false } = {}) {
     topicRuntime.pendingCounter = null;
     topicRuntime.counter = evaluation.counterAfter ?? topicRuntime.counter;
     if (!evaluation.selection) {
+        topicRuntime.lastDirective = null;
         return null;
     }
 
     applyTopicSelection(evaluation.selection);
-    return buildTopicDirective(evaluation.selection);
+    const directive = buildTopicDirective(evaluation.selection);
+    topicRuntime.lastDirective = directive;
+    return directive;
+}
+
+export function consumeTopicDirective() {
+    const directive = topicRuntime.lastDirective ?? null;
+    topicRuntime.lastDirective = null;
+    return directive;
 }
 
 function applyAccessibilityClasses() {
