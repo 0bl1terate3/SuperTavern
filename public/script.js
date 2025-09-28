@@ -12,6 +12,7 @@ import {
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
+import { applyWordLimitIfNeeded } from './scripts/word-limit.js';
 import {
     voiceAudioController,
     initializeVoiceAudio,
@@ -5250,6 +5251,19 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             displayIncompleteSentences: displayIncomplete,
         });
 
+        let wordLimitInfo = null;
+        if (!isImpersonate && type !== 'quiet') {
+            try {
+                wordLimitInfo = await applyWordLimitIfNeeded(getMessage);
+                if (wordLimitInfo?.applied && typeof wordLimitInfo.text === 'string') {
+                    getMessage = wordLimitInfo.text;
+                    messageChunk = wordLimitInfo.text;
+                }
+            } catch (error) {
+                console.warn('Word limit enforcement failed', error);
+            }
+        }
+
         if (isImpersonate) {
             $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
@@ -5267,6 +5281,18 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             }
             else {
                 ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrl }));
+            }
+
+            if (wordLimitInfo?.applied && chat.length) {
+                const lastMessage = chat[chat.length - 1];
+                if (lastMessage?.extra && typeof lastMessage.extra === 'object') {
+                    lastMessage.extra.word_limit = {
+                        limit: wordLimitInfo.limit,
+                        method: wordLimitInfo.method,
+                        attempts: wordLimitInfo.attempts,
+                        fallback: Boolean(wordLimitInfo.fallback),
+                    };
+                }
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
