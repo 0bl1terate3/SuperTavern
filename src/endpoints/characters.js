@@ -609,6 +609,24 @@ function charaFormatData(data, directories) {
     _.set(char, 'data.extensions.fav', data.fav == 'true');
     _.set(char, 'data.extensions.world', data.world || '');
 
+    // Generation settings fields
+    _.set(char, 'data.generation_bias', data.generation_bias || '');
+    _.set(char, 'data.response_style', data.response_style || 'balanced');
+    _.set(char, 'data.generation_temperature', data.generation_temperature || 0.7);
+    // Personality traits
+    _.set(char, 'data.sarcasm_level', data.sarcasm_level || 5);
+    _.set(char, 'data.empathy_level', data.empathy_level || 5);
+    _.set(char, 'data.aggressiveness', data.aggressiveness || 5);
+    _.set(char, 'data.creativity_level', data.creativity_level || 5);
+    // Memory & context
+    _.set(char, 'data.key_memories', data.key_memories || '');
+    _.set(char, 'data.memory_persistence', data.memory_persistence || 5);
+    _.set(char, 'data.relationship_status', data.relationship_status || 'neutral');
+    // Response control
+    _.set(char, 'data.response_length', data.response_length || 5);
+    _.set(char, 'data.question_tendency', data.question_tendency || 5);
+    _.set(char, 'data.dialogue_rules', data.dialogue_rules || '');
+
     // Spec extension: depth prompt
     const depth_default = 4;
     const role_default = 'system';

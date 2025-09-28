@@ -1,5 +1,15 @@
 import { debounce, download } from './utils.js';
 
+const DEFAULT_TOPIC_ENTRIES = [
+    'Space exploration',
+    'Ancient myths',
+    'Cooking tips',
+    'Cyberpunk slang',
+    'Fun animal facts',
+];
+
+const MAX_RECENT_TOPICS = 8;
+
 const DEFAULT_SETTINGS = {
     multiUser: {
         enabled: false,
@@ -41,6 +51,89 @@ const DEFAULT_SETTINGS = {
     customization: {
         dynamicThemes: false,
     },
+    voiceAudio: {
+        speech: {
+            enabled: false,
+            autoPlay: true,
+            voice: 'default',
+            rate: 1.0,
+            pitch: 1.0,
+            volume: 0.8,
+            language: 'en-US',
+            voices: [],
+            characterVoices: {},
+            lastUsedVoice: null,
+        },
+        microphone: {
+            enabled: false,
+            autoStart: false,
+            continuous: false,
+            language: 'en-US',
+            interimResults: true,
+            maxAlternatives: 1,
+            confidence: 0.7,
+            timeout: 5000,
+            silenceDetection: true,
+            silenceThreshold: 2000,
+        },
+        ambient: {
+            enabled: false,
+            volume: 0.3,
+            fadeInDuration: 2000,
+            fadeOutDuration: 2000,
+            crossfade: true,
+            soundscapes: [],
+            activeSoundscape: null,
+            loop: true,
+            randomize: false,
+            moodSync: false,
+        },
+        mood: {
+            enabled: false,
+            sensitivity: 0.5,
+            detectionMethod: 'sentiment',
+            moodVoices: {
+                happy: { rate: 1.1, pitch: 1.05, volume: 0.9 },
+                sad: { rate: 0.9, pitch: 0.95, volume: 0.7 },
+                excited: { rate: 1.2, pitch: 1.1, volume: 1.0 },
+                calm: { rate: 0.8, pitch: 0.9, volume: 0.6 },
+                angry: { rate: 1.3, pitch: 1.2, volume: 0.95 },
+                neutral: { rate: 1.0, pitch: 1.0, volume: 0.8 },
+            },
+            currentMood: 'neutral',
+            moodHistory: [],
+            autoDetect: true,
+        },
+        character: {
+            enabled: false,
+            voiceProfiles: {},
+            autoAssign: true,
+            voiceMatching: 'name',
+            defaultVoice: null,
+            voiceCache: {},
+        },
+        accessibility: {
+            enabled: false,
+            highContrast: false,
+            reducedMotion: false,
+            screenReader: false,
+            voiceDescriptions: false,
+            audioCues: true,
+            hapticFeedback: false,
+        },
+        advanced: {
+            audioContext: null,
+            gainNode: null,
+            compressor: null,
+            equalizer: null,
+            reverb: null,
+            echo: null,
+            noiseReduction: false,
+            audioProcessing: false,
+            realTimeAnalysis: false,
+            audioVisualization: false,
+        },
+    },
     jokeGenerator: {
         enabled: false,
         intensity: 'medium',
@@ -49,7 +142,21 @@ const DEFAULT_SETTINGS = {
         characterSpecific: false,
         customPrompts: {},
         favoriteJokes: [],
-        jokeHistory: []
+        jokeHistory: [],
+    },
+    topics: {
+        enabled: false,
+        mode: 'random',
+        blend: 'directive',
+        placement: 'system',
+        frequency: 1,
+        selectedLists: [],
+        lists: [],
+        sequence: {
+            listIndex: 0,
+            entryIndices: {},
+        },
+        lastTopic: null,
     },
 };
 
@@ -79,6 +186,21 @@ const remoteMessageVersions = new Map();
 
 const schedulePersist = debounce(() => dependencies.saveSettingsDebounced?.(), 800);
 
+const topicsElements = {
+    container: null,
+    lists: null,
+    recent: null,
+    importInput: null,
+};
+
+const topicRuntime = {
+    counter: 0,
+    pending: null,
+    pendingCounter: null,
+    recent: [],
+    lastDirective: null,
+};
+
 export function configureSuperTavern(newDependencies) {
     dependencies = { ...dependencies, ...newDependencies };
     registerCoreListeners();
@@ -102,6 +224,20 @@ export function initializeSuperTavernUI() {
             element.addEventListener('change', () => {
                 const changed = setStateValue(path, element.checked);
                 if (!changed) {
+                    return;
+                }
+
+                applyState();
+                render();
+                schedulePersist();
+            });
+        } else if (element instanceof HTMLInputElement && element.type === 'number') {
+            element.addEventListener('change', () => {
+                const numericValue = Number(element.value);
+                const normalized = Number.isFinite(numericValue) ? numericValue : 1;
+                const changed = setStateValue(path, normalized);
+                if (!changed) {
+                    element.value = String(getStateValue(path) ?? normalized);
                     return;
                 }
 
@@ -159,13 +295,38 @@ export function initializeSuperTavernUI() {
         jokeEnabledCheckbox.addEventListener('change', toggleJokeSettings);
     }
 
+    topicsElements.container = panel.querySelector('#supertavern-topics');
+    topicsElements.lists = panel.querySelector('#supertavern-topics-lists');
+    topicsElements.recent = panel.querySelector('#supertavern-topics-recent-list');
+    topicsElements.importInput = panel.querySelector('#supertavern-topics-import-input');
+
+    panel.querySelector('#supertavern-topics-add')?.addEventListener('click', () => {
+        addTopicList();
+    });
+
+    panel.querySelector('#supertavern-topics-export')?.addEventListener('click', exportTopicLists);
+    panel.querySelector('#supertavern-topics-import')?.addEventListener('click', () => topicsElements.importInput?.click());
+    topicsElements.importInput?.addEventListener('change', handleTopicImport);
+
+
     render();
 }
 
 export async function loadSuperTavernState(savedState = {}) {
     state = mergeDeep(deepClone(DEFAULT_SETTINGS), savedState ?? {});
+    normalizeTopicState();
     ensureClientId();
     applyState();
+
+    // Initialize voice controller with loaded settings
+    if (typeof window !== 'undefined' && window.voiceAudioController) {
+        try {
+            await window.voiceAudioController.updateSettings(state.voiceAudio);
+        } catch (error) {
+            console.error('Failed to update voice controller settings:', error);
+        }
+    }
+
     render();
 }
 
@@ -605,6 +766,7 @@ function render() {
     renderSharedMemory();
     renderTeamAnalytics();
     renderGamification();
+    renderTopics();
     applyAccessibilityClasses();
     updateDynamicTheme();
 }
@@ -626,6 +788,11 @@ function syncUIFromState() {
         if (element instanceof HTMLInputElement && element.type === 'checkbox') {
             if (element.checked !== Boolean(value)) {
                 element.checked = Boolean(value);
+            }
+        } else if (element instanceof HTMLInputElement && element.type === 'number') {
+            const numericValue = Number(value ?? 0);
+            if (Number(element.value) !== numericValue) {
+                element.value = String(Number.isFinite(numericValue) ? numericValue : 0);
             }
         } else if (element instanceof HTMLSelectElement) {
             if (element.value !== String(value)) {
@@ -775,6 +942,659 @@ function formatAchievementLabel(id) {
     return labels[id] || id;
 }
 
+function renderTopics() {
+    const container = topicsElements.container;
+    if (!container || !topicsElements.lists) {
+        return;
+    }
+
+    container.dataset.mode = state.topics?.mode ?? 'random';
+
+    const listsContainer = topicsElements.lists;
+    listsContainer.textContent = '';
+
+    const lists = Array.isArray(state.topics?.lists) ? state.topics.lists : [];
+    if (!lists.length) {
+        const empty = document.createElement('div');
+        empty.className = 'supertavern-topics-empty';
+        empty.textContent = 'Add a topic list or import a .txt file to start injecting new themes.';
+        listsContainer.append(empty);
+    } else {
+        for (const list of lists) {
+            listsContainer.append(renderTopicCard(list));
+        }
+    }
+
+    renderTopicsRecent();
+}
+
+function renderTopicCard(list) {
+    const card = document.createElement('article');
+    card.className = 'supertavern-topic-card';
+    card.dataset.id = list.id;
+    card.dataset.active = String(state.topics.selectedLists?.includes(list.id));
+
+    const header = document.createElement('header');
+    const selectLabel = document.createElement('label');
+    const selectCheckbox = document.createElement('input');
+    selectCheckbox.type = 'checkbox';
+    selectCheckbox.checked = state.topics.selectedLists?.includes(list.id);
+    selectCheckbox.addEventListener('change', () => {
+        toggleTopicList(list.id, selectCheckbox.checked);
+    });
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = list.name || 'Topic list';
+    selectLabel.append(selectCheckbox, titleSpan);
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'menu_button';
+    removeButton.innerHTML = '<i class="fa-solid fa-trash"></i> Remove';
+    removeButton.addEventListener('click', () => removeTopicList(list.id));
+
+    header.append(selectLabel, removeButton);
+
+    const nameField = document.createElement('label');
+    nameField.className = 'supertavern-topics-field';
+    const nameLabel = document.createElement('span');
+    nameLabel.textContent = 'List name';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'text_pole';
+    nameInput.value = list.name || '';
+    nameInput.addEventListener('change', () => {
+        const newName = updateTopicListName(list.id, nameInput.value);
+        titleSpan.textContent = newName;
+    });
+    nameField.append(nameLabel, nameInput);
+
+    const metaRow = document.createElement('div');
+    metaRow.className = 'supertavern-topic-meta';
+
+    const weightWrapper = document.createElement('label');
+    weightWrapper.className = 'supertavern-topic-weight';
+    const weightLabel = document.createElement('span');
+    weightLabel.textContent = 'Weight';
+    const weightInput = document.createElement('input');
+    weightInput.type = 'number';
+    weightInput.min = '1';
+    weightInput.max = '99';
+    weightInput.className = 'text_pole';
+    weightInput.value = list.weight ?? 1;
+    weightInput.addEventListener('change', () => {
+        updateTopicListWeight(list.id, Number(weightInput.value));
+    });
+    weightWrapper.append(weightLabel, weightInput);
+
+    const countElement = document.createElement('span');
+    countElement.className = 'supertavern-topic-count';
+    updateTopicCountLabel(countElement, list);
+
+    metaRow.append(weightWrapper, countElement);
+
+    const entriesField = document.createElement('label');
+    entriesField.className = 'supertavern-topics-field';
+    const entriesLabel = document.createElement('span');
+    entriesLabel.textContent = 'Topics (one per line)';
+    const entriesTextarea = document.createElement('textarea');
+    entriesTextarea.value = Array.isArray(list.entries) ? list.entries.join('\n') : '';
+    entriesTextarea.addEventListener('change', () => {
+        updateTopicListEntries(list.id, entriesTextarea.value);
+        const updated = getTopicListById(list.id);
+        updateTopicCountLabel(countElement, updated ?? list);
+    });
+    entriesField.append(entriesLabel, entriesTextarea);
+
+    card.append(header, nameField, metaRow, entriesField);
+    return card;
+}
+
+function updateTopicCountLabel(target, list) {
+    if (!target || !list) {
+        return;
+    }
+
+    const count = Array.isArray(list.entries) ? list.entries.length : 0;
+    target.textContent = `${count} topic${count === 1 ? '' : 's'}`;
+}
+
+function renderTopicsRecent() {
+    const listElement = topicsElements.recent;
+    if (!listElement) {
+        return;
+    }
+
+    listElement.textContent = '';
+
+    if (!topicRuntime.recent.length) {
+        const empty = document.createElement('li');
+        empty.textContent = 'Topic cues will appear here after the next generation.';
+        listElement.append(empty);
+        return;
+    }
+
+    for (const item of topicRuntime.recent) {
+        const entry = document.createElement('li');
+        const label = item.listName ? `${item.topic} — ${item.listName}` : item.topic;
+        entry.textContent = label;
+
+        if (item.usedAt) {
+            const time = document.createElement('time');
+            const timestamp = new Date(item.usedAt);
+            time.dateTime = timestamp.toISOString();
+            time.textContent = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            entry.append(time);
+        }
+
+        listElement.append(entry);
+    }
+}
+
+function addTopicList(name = '', entries = [], options = {}) {
+    const list = createTopicList(name || `List ${state.topics.lists.length + 1}`, entries, options.id);
+    if (typeof options.weight === 'number') {
+        list.weight = Math.max(1, Math.min(99, Math.round(options.weight)));
+    }
+    state.topics.lists.push(list);
+    if (!state.topics.selectedLists.includes(list.id)) {
+        state.topics.selectedLists.push(list.id);
+    }
+
+    normalizeTopicState();
+    renderTopics();
+    schedulePersist();
+    return list;
+}
+
+function removeTopicList(id) {
+    const index = state.topics.lists.findIndex((item) => item.id === id);
+    if (index === -1) {
+        return;
+    }
+
+    state.topics.lists.splice(index, 1);
+    state.topics.selectedLists = state.topics.selectedLists.filter((listId) => listId !== id);
+
+    normalizeTopicState();
+    renderTopics();
+    schedulePersist();
+}
+
+function toggleTopicList(id, enabled) {
+    const selected = new Set(state.topics.selectedLists || []);
+    if (enabled) {
+        selected.add(id);
+    } else {
+        selected.delete(id);
+    }
+
+    state.topics.selectedLists = Array.from(selected);
+    normalizeTopicState();
+    renderTopics();
+    schedulePersist();
+}
+
+function updateTopicListName(id, name) {
+    const list = getTopicListById(id);
+    if (!list) {
+        return 'Topic list';
+    }
+
+    const trimmed = name?.trim() || 'Topic list';
+    if (list.name !== trimmed) {
+        list.name = trimmed;
+        schedulePersist();
+    }
+
+    return trimmed;
+}
+
+function updateTopicListWeight(id, weight) {
+    const list = getTopicListById(id);
+    if (!list) {
+        return;
+    }
+
+    const normalized = Math.max(1, Math.min(99, Math.round(Number(weight) || 1)));
+    if (list.weight !== normalized) {
+        list.weight = normalized;
+        schedulePersist();
+    }
+}
+
+function updateTopicListEntries(id, text) {
+    const list = getTopicListById(id);
+    if (!list) {
+        return;
+    }
+
+    const entries = parseTopicsFromText(text);
+    list.entries = entries;
+    normalizeTopicState();
+    schedulePersist();
+}
+
+function exportTopicLists() {
+    normalizeTopicState();
+    const payload = {
+        exportedAt: new Date().toISOString(),
+        topics: {
+            enabled: state.topics.enabled,
+            mode: state.topics.mode,
+            blend: state.topics.blend,
+            placement: state.topics.placement,
+            frequency: state.topics.frequency,
+            selectedLists: state.topics.selectedLists,
+            lists: state.topics.lists.map(({ id, name, weight, entries }) => ({ id, name, weight, entries })),
+        },
+    };
+
+    download(JSON.stringify(payload, null, 2), 'supertavern-topics.json', 'application/json');
+    window.toastr?.success('Topic lists exported.', 'AI Topics');
+}
+
+async function handleTopicImport(event) {
+    const input = event.target;
+    const file = input?.files?.[0];
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        const fileName = file.name.replace(/\.[^.]+$/, '');
+        const text = await file.text();
+
+        if (file.name.endsWith('.json')) {
+            const data = JSON.parse(text);
+            if (Array.isArray(data?.topics?.lists)) {
+                const createdIds = [];
+                for (const list of data.topics.lists) {
+                    const created = addTopicList(
+                        list.name,
+                        Array.isArray(list.entries) ? list.entries : [],
+                        { id: list.id, weight: list.weight },
+                    );
+                    createdIds.push(created.id);
+                }
+
+                if (Array.isArray(data.topics.selectedLists)) {
+                    state.topics.selectedLists = data.topics.selectedLists.filter((id) => createdIds.includes(id));
+                }
+
+                state.topics.mode = data.topics.mode ?? state.topics.mode;
+                state.topics.blend = data.topics.blend ?? state.topics.blend;
+                state.topics.placement = data.topics.placement ?? state.topics.placement;
+                state.topics.frequency = data.topics.frequency ?? state.topics.frequency;
+            } else if (Array.isArray(data)) {
+                addTopicList(fileName, data);
+            }
+        } else {
+            const entries = parseTopicsFromText(text);
+            if (!entries.length) {
+                throw new Error('No topics found in file');
+            }
+            addTopicList(fileName || 'Imported topics', entries);
+        }
+
+        normalizeTopicState();
+        renderTopics();
+        schedulePersist();
+        window.toastr?.success('Topics imported.', 'AI Topics');
+    } catch (error) {
+        console.error('Failed to import topics', error);
+        window.toastr?.error('Could not import topics.', 'AI Topics');
+    } finally {
+        if (topicsElements.importInput) {
+            topicsElements.importInput.value = '';
+        }
+    }
+}
+
+function parseTopicsFromText(text) {
+    return String(text || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line, index, array) => line && array.indexOf(line) === index);
+}
+
+function createTopicListId() {
+    try {
+        return crypto?.randomUUID?.() ?? `topic-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    } catch {
+        return `topic-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    }
+}
+
+function createTopicList(name, entries, id = undefined) {
+    return {
+        id: id || createTopicListId(),
+        name: name?.trim() || 'Topic list',
+        weight: 1,
+        entries: Array.isArray(entries)
+            ? entries.map((entry) => String(entry).trim()).filter(Boolean)
+            : [],
+    };
+}
+
+function getTopicListById(id) {
+    return state.topics.lists.find((item) => item.id === id);
+}
+
+function normalizeTopicState() {
+    if (!state.topics || typeof state.topics !== 'object') {
+        state.topics = deepClone(DEFAULT_SETTINGS.topics);
+    }
+
+    if (!Array.isArray(state.topics.lists)) {
+        state.topics.lists = [];
+    }
+
+    for (const list of state.topics.lists) {
+        list.id = list.id || createTopicListId();
+        list.name = list.name?.trim() || 'Topic list';
+        list.weight = Math.max(1, Math.min(99, Math.round(Number(list.weight) || 1)));
+        list.entries = Array.isArray(list.entries)
+            ? list.entries.map((entry) => String(entry).trim()).filter(Boolean)
+            : [];
+    }
+
+    if (!state.topics.lists.length) {
+        state.topics.lists.push(createTopicList('Starter topics', DEFAULT_TOPIC_ENTRIES));
+    }
+
+    if (!Array.isArray(state.topics.selectedLists)) {
+        state.topics.selectedLists = [];
+    }
+
+    const availableIds = state.topics.lists.map((list) => list.id);
+    state.topics.selectedLists = state.topics.selectedLists.filter((id) => availableIds.includes(id));
+    if (!state.topics.selectedLists.length && availableIds.length) {
+        state.topics.selectedLists = [availableIds[0]];
+    }
+
+    if (!state.topics.sequence || typeof state.topics.sequence !== 'object') {
+        state.topics.sequence = { listIndex: 0, entryIndices: {} };
+    }
+
+    if (!state.topics.sequence.entryIndices || typeof state.topics.sequence.entryIndices !== 'object') {
+        state.topics.sequence.entryIndices = {};
+    }
+
+    for (const listId of Object.keys(state.topics.sequence.entryIndices)) {
+        if (!availableIds.includes(listId)) {
+            delete state.topics.sequence.entryIndices[listId];
+        }
+    }
+
+    for (const list of state.topics.lists) {
+        if (!Number.isInteger(state.topics.sequence.entryIndices[list.id])) {
+            state.topics.sequence.entryIndices[list.id] = 0;
+        }
+
+        if (list.entries.length) {
+            state.topics.sequence.entryIndices[list.id] = Math.max(
+                0,
+                Math.min(list.entries.length - 1, state.topics.sequence.entryIndices[list.id]),
+            );
+        } else {
+            state.topics.sequence.entryIndices[list.id] = 0;
+        }
+    }
+
+    const mode = state.topics.mode;
+    if (!['random', 'sequential', 'weighted'].includes(mode)) {
+        state.topics.mode = 'random';
+    }
+
+    if (!['directive', 'hint'].includes(state.topics.blend)) {
+        state.topics.blend = 'directive';
+    }
+
+    if (!['system', 'user'].includes(state.topics.placement)) {
+        state.topics.placement = 'system';
+    }
+
+    state.topics.frequency = Math.max(1, Math.min(99, Math.round(Number(state.topics.frequency) || 1)));
+
+    const selectedCount = state.topics.selectedLists.length;
+    if (!selectedCount) {
+        state.topics.sequence.listIndex = 0;
+    } else {
+        state.topics.sequence.listIndex = Math.max(
+            0,
+            Math.min(state.topics.sequence.listIndex ?? 0, selectedCount - 1),
+        );
+    }
+}
+
+function resetTopicRuntime() {
+    topicRuntime.counter = 0;
+    topicRuntime.pending = null;
+    topicRuntime.pendingCounter = null;
+    topicRuntime.recent = [];
+    topicRuntime.lastDirective = null;
+    renderTopicsRecent();
+}
+
+function getActiveTopicLists() {
+    const ids = state.topics.selectedLists?.length ? state.topics.selectedLists : state.topics.lists.map((list) => list.id);
+    const listMap = new Map(state.topics.lists.map((list) => [list.id, list]));
+    return ids
+        .map((id) => listMap.get(id))
+        .filter((list) => list && list.entries.length);
+}
+
+function evaluateTopicSelection() {
+    const frequency = Math.max(1, Math.round(Number(state.topics.frequency) || 1));
+    const activeLists = getActiveTopicLists();
+    const counter = topicRuntime.pendingCounter ?? topicRuntime.counter;
+    const nextCounter = counter + 1;
+
+    if (!activeLists.length) {
+        return { selection: null, counterAfter: Math.min(nextCounter, Math.max(frequency - 1, 0)) };
+    }
+
+    if (nextCounter < frequency) {
+        return { selection: null, counterAfter: nextCounter };
+    }
+
+    const selection = selectTopicFromLists(activeLists, state.topics.mode);
+    if (!selection) {
+        return { selection: null, counterAfter: Math.min(nextCounter, Math.max(frequency - 1, 0)) };
+    }
+
+    return { selection, counterAfter: 0 };
+}
+
+function selectTopicFromLists(lists, mode) {
+    if (!lists.length) {
+        return null;
+    }
+
+    if (mode === 'sequential') {
+        const order = lists.map((list) => list.id);
+        if (!order.length) {
+            return null;
+        }
+
+        let listIndex = state.topics.sequence.listIndex ?? 0;
+        if (listIndex >= order.length) {
+            listIndex = 0;
+        }
+
+        const listId = order[listIndex];
+        const list = getTopicListById(listId);
+        if (!list || !list.entries.length) {
+            return null;
+        }
+
+        const entryIndex = state.topics.sequence.entryIndices?.[listId] ?? 0;
+        const normalizedIndex = Math.max(0, Math.min(list.entries.length - 1, entryIndex));
+        const topic = list.entries[normalizedIndex];
+
+        return {
+            listId,
+            listName: list.name,
+            topic,
+            mode,
+            nextEntryIndex: (normalizedIndex + 1) % list.entries.length,
+            nextListIndex: (listIndex + 1) % order.length,
+        };
+    }
+
+    if (mode === 'weighted') {
+        const totalWeight = lists.reduce((sum, list) => sum + Math.max(1, Number(list.weight) || 1), 0);
+        if (totalWeight <= 0) {
+            return null;
+        }
+
+        let roll = Math.random() * totalWeight;
+        let selected = lists[0];
+        for (const list of lists) {
+            const weight = Math.max(1, Number(list.weight) || 1);
+            if (roll < weight) {
+                selected = list;
+                break;
+            }
+            roll -= weight;
+        }
+
+        const entryIndex = Math.floor(Math.random() * selected.entries.length);
+        return {
+            listId: selected.id,
+            listName: selected.name,
+            topic: selected.entries[entryIndex],
+            mode,
+        };
+    }
+
+    // random
+    const selected = lists[Math.floor(Math.random() * lists.length)];
+    const entryIndex = Math.floor(Math.random() * selected.entries.length);
+    return {
+        listId: selected.id,
+        listName: selected.name,
+        topic: selected.entries[entryIndex],
+        mode,
+    };
+}
+
+function applyTopicSelection(selection) {
+    if (!selection) {
+        return;
+    }
+
+    if (selection.mode === 'sequential') {
+        if (typeof selection.nextEntryIndex === 'number') {
+            state.topics.sequence.entryIndices[selection.listId] = selection.nextEntryIndex;
+        }
+        if (typeof selection.nextListIndex === 'number') {
+            state.topics.sequence.listIndex = selection.nextListIndex;
+        }
+    }
+
+    topicRuntime.recent.unshift({
+        topic: selection.topic,
+        listName: selection.listName,
+        usedAt: Date.now(),
+    });
+
+    if (topicRuntime.recent.length > MAX_RECENT_TOPICS) {
+        topicRuntime.recent.length = MAX_RECENT_TOPICS;
+    }
+
+    state.topics.lastTopic = {
+        topic: selection.topic,
+        listId: selection.listId,
+        usedAt: new Date().toISOString(),
+    };
+
+    renderTopicsRecent();
+    schedulePersist();
+}
+
+function buildTopicDirective(selection) {
+    const topic = selection.topic;
+    const listName = selection.listName;
+    const blend = state.topics.blend ?? 'directive';
+    const placement = state.topics.placement ?? 'system';
+
+    const directive = blend === 'hint'
+        ? `If it feels natural, weave in a reference to "${topic}".`
+        : `Make sure to include something related to "${topic}".`;
+
+    return {
+        topic,
+        listId: selection.listId,
+        listName,
+        directive,
+        placement,
+    };
+}
+
+export function maybeGetTopicPrompt({ simulate = false } = {}) {
+    normalizeTopicState();
+
+    if (!state.topics.enabled) {
+        if (!simulate) {
+            resetTopicRuntime();
+        } else {
+            topicRuntime.pending = null;
+            topicRuntime.pendingCounter = null;
+        }
+        topicRuntime.lastDirective = null;
+        return null;
+    }
+
+    if (!simulate && topicRuntime.pending) {
+        const pending = topicRuntime.pending;
+        topicRuntime.pending = null;
+        topicRuntime.pendingCounter = null;
+        topicRuntime.counter = pending?.counterAfter ?? topicRuntime.counter;
+        if (!pending?.selection) {
+            topicRuntime.lastDirective = null;
+            return null;
+        }
+        applyTopicSelection(pending.selection);
+        const directive = buildTopicDirective(pending.selection);
+        topicRuntime.lastDirective = directive;
+        return directive;
+    }
+
+    const evaluation = evaluateTopicSelection();
+    if (!evaluation) {
+        topicRuntime.lastDirective = null;
+        return null;
+    }
+
+    if (simulate) {
+        topicRuntime.pending = evaluation;
+        topicRuntime.pendingCounter = evaluation.counterAfter;
+        return evaluation.selection ? buildTopicDirective(evaluation.selection) : null;
+    }
+
+    topicRuntime.pending = null;
+    topicRuntime.pendingCounter = null;
+    topicRuntime.counter = evaluation.counterAfter ?? topicRuntime.counter;
+    if (!evaluation.selection) {
+        topicRuntime.lastDirective = null;
+        return null;
+    }
+
+    applyTopicSelection(evaluation.selection);
+    const directive = buildTopicDirective(evaluation.selection);
+    topicRuntime.lastDirective = directive;
+    return directive;
+}
+
+export function consumeTopicDirective() {
+    const directive = topicRuntime.lastDirective ?? null;
+    topicRuntime.lastDirective = null;
+    return directive;
+}
+
 function applyAccessibilityClasses() {
     const root = document.documentElement;
     const body = document.body;
@@ -850,11 +1670,29 @@ function setStateValue(path, value) {
 
     target[lastKey] = value;
 
+    if (path === 'topics.frequency') {
+        const numeric = Math.max(1, Math.min(99, Math.round(Number(target[lastKey]) || 1)));
+        target[lastKey] = numeric;
+    }
+
     if (path.startsWith('multiUser') && path !== 'multiUser.clientId') {
         if (!state.multiUser.enabled) {
             teardownMultiUserChannel();
         } else {
             ensureMultiUserChannel();
+        }
+    }
+
+    if (path.startsWith('topics.')) {
+        normalizeTopicState();
+
+        if (path === 'topics.enabled' && !value) {
+            resetTopicRuntime();
+        }
+
+        if (path === 'topics.mode') {
+            // Reset counters when switching selection strategies for predictability
+            topicRuntime.counter = 0;
         }
     }
 
@@ -881,6 +1719,15 @@ function setStateValue(path, value) {
 
     if (path.endsWith('enabled') && state.gamification.enabled) {
         addExperience('feature_toggle');
+    }
+
+    // Update voice controller settings if voice settings changed
+    if (path.startsWith('voiceAudio.') && typeof window !== 'undefined' && window.voiceAudioController) {
+        try {
+            window.voiceAudioController.updateSettings(state.voiceAudio);
+        } catch (error) {
+            console.error('Failed to update voice controller:', error);
+        }
     }
 
     return true;
@@ -975,3 +1822,4 @@ function createClientId() {
 function getPanel() {
     return document.getElementById('supertavern-settings-panel');
 }
+

@@ -13,6 +13,39 @@ import {
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
+    voiceAudioController,
+    initializeVoiceAudio,
+    speakText,
+    stopVoice,
+    startVoiceRecording,
+    stopVoiceRecording,
+    playAmbientSound,
+    stopAmbientSound,
+    analyzeTextMood,
+    setCharacterVoiceProfile,
+    updateVoiceSettings,
+    getVoiceSettings,
+    onVoiceEvent,
+    offVoiceEvent
+} from './scripts/voice-audio-controller.js';
+import { initializeVoiceAudioInterface } from './scripts/voice-audio-interface.js';
+import { automationController } from './scripts/automation-controller.js';
+import { initializeAutomationInterface } from './scripts/automation-interface.js';
+import { aiEnhancementController } from './scripts/ai-enhancement-controller.js';
+import { initializeAIEnhancementInterface } from './scripts/ai-enhancement-interface.js';
+import { developerToolsController } from './scripts/developer-tools-controller.js';
+import { initializeDeveloperToolsInterface } from './scripts/developer-tools-interface.js';
+import { analyticsDashboardController } from './scripts/analytics-dashboard-controller.js';
+import { initializeAnalyticsDashboardInterface } from './scripts/analytics-dashboard-interface.js';
+import { textUtilitiesController } from './scripts/text-utilities-controller.js';
+import { initializeTextUtilitiesInterface } from './scripts/text-utilities-interface.js';
+import { visualEffectsController } from './scripts/visual-effects-controller.js';
+import { initializeVisualEffectsInterface } from './scripts/visual-effects-interface.js';
+import { searchDiscoveryController } from './scripts/search-discovery-controller.js';
+import { initializeSearchDiscoveryInterface } from './scripts/search-discovery-interface.js';
+import { audioStudioController } from './scripts/audio-studio-controller.js';
+import { initializeAudioStudioInterface } from './scripts/audio-studio-interface.js';
+import {
     generateKoboldWithStreaming,
     kai_settings,
     loadKoboldSettings,
@@ -263,6 +296,8 @@ import {
     initializeSuperTavernUI,
     loadSuperTavernState,
     getSuperTavernState,
+    maybeGetTopicPrompt,
+    consumeTopicDirective,
 } from './scripts/supertavern-settings.js';
 import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
@@ -515,6 +550,10 @@ export let menu_type = '';
 
 export let selected_button = ''; //which button pressed
 
+// Global variable for generation bias display
+/** @type {string|null} */
+window.currentGenerationBias = null;
+
 //create pole save
 export let create_save = {
     name: '',
@@ -539,6 +578,23 @@ export let create_save = {
     depth_prompt_role: depth_prompt_role_default,
     extensions: {},
     extra_books: [],
+    // New generation settings
+    generation_bias: '',
+    response_style: 'default',
+    generation_temperature: 0.7,
+    // Personality traits
+    sarcasm_level: 5,
+    empathy_level: 5,
+    aggressiveness: 5,
+    creativity_level: 5,
+    // Memory & context
+    key_memories: '',
+    memory_persistence: 5,
+    relationship_status: 'neutral',
+    // Response control
+    response_length: 5,
+    question_tendency: 5,
+    dialogue_rules: '',
 };
 
 //animation right menu
@@ -712,6 +768,35 @@ async function firstLoadInit() {
     initHorde();
     initRossMods();
     initStats();
+    await initializeVoiceAudio();
+    initializeVoiceAudioInterface();
+    await automationController.initialize();
+    initializeAutomationInterface();
+        await aiEnhancementController.initialize();
+        initializeAIEnhancementInterface();
+
+        // Initialize Developer Tools
+        await developerToolsController.initialize();
+        initializeDeveloperToolsInterface();
+
+        // Initialize Analytics Dashboard
+        await analyticsDashboardController.initialize();
+        initializeAnalyticsDashboardInterface();
+
+        // Initialize Text Utilities
+        await textUtilitiesController.initialize();
+        initializeTextUtilitiesInterface();
+
+        // Initialize Visual Effects Studio
+        await visualEffectsController.initialize();
+        initializeVisualEffectsInterface();
+
+        // Initialize Search & Discovery Hub
+        await searchDiscoveryController.initialize();
+        initializeSearchDiscoveryInterface();
+
+        await audioStudioController.initialize();
+        initializeAudioStudioInterface();
     initCfg();
     initLogprobs();
     initInputMarkdown();
@@ -1824,6 +1909,48 @@ function getMessageFromTemplate({
     return mes;
 }
 
+function applyTopicBadge(messageElement, topicInfo) {
+    if (!messageElement?.length) {
+        return;
+    }
+
+    const badge = messageElement.find('.mes_topics_badge');
+    if (!badge.length) {
+        return;
+    }
+
+    const label = badge.find('.mes_topics_label');
+
+    if (!topicInfo || !topicInfo.topic) {
+        badge.attr('hidden', 'hidden');
+        badge.removeClass('is-visible');
+        badge.removeAttr('title');
+        badge.removeAttr('data-placement');
+        label.text('');
+        return;
+    }
+
+    const topicText = String(topicInfo.topic).trim();
+    const listName = topicInfo.listName ? String(topicInfo.listName).trim() : '';
+    const labelText = listName ? `${topicText} · ${listName}` : topicText;
+
+    label.text(labelText);
+    if (topicInfo.directive) {
+        badge.attr('title', topicInfo.directive);
+    } else {
+        badge.removeAttr('title');
+    }
+
+    if (topicInfo.placement) {
+        badge.attr('data-placement', topicInfo.placement);
+    } else {
+        badge.removeAttr('data-placement');
+    }
+
+    badge.removeAttr('hidden');
+    badge.addClass('is-visible');
+}
+
 /**
  * Re-renders a message block with updated content.
  * @param {number} messageId Message ID
@@ -1836,12 +1963,141 @@ export function updateMessageBlock(messageId, message, { rerenderMessage = true 
     if (rerenderMessage) {
         const text = message?.extra?.display_text ?? message.mes;
         messageElement.find('.mes_text').html(messageFormatting(text, message.name, message.is_system, message.is_user, messageId, {}, false));
+
+        // Auto-speak AI responses if TTS is enabled
+        if (!message.is_user && typeof window !== 'undefined' && window.voiceAudioController) {
+            try {
+                // Check if TTS is enabled in the voice-audio interface
+                const ttsEnabled = document.getElementById('voice_audio_tts_enabled');
+                if (ttsEnabled && ttsEnabled.checked && text && text.trim().length > 0) {
+                    // Clean the text for TTS (remove HTML tags, special characters)
+                    const cleanText = text.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
+                    if (cleanText.length > 0) {
+                        console.log('Auto-speaking AI response:', cleanText.substring(0, 100) + '...');
+                        window.voiceAudioController.speak(cleanText);
+                    }
+                }
+            } catch (error) {
+                console.error('Auto-TTS failed:', error);
+            }
+        }
     }
 
     updateReasoningUI(messageElement);
 
+    // Add generation bias display for non-streaming messages
+    if (window.currentGenerationBias && !message.is_user && !message.is_system) {
+        addGenerationBiasDisplayToMessage(messageElement);
+    }
+
     addCopyToCodeBlocks(messageElement);
     appendMediaToMessage(message, messageElement);
+    applyTopicBadge(messageElement, message?.extra?.aiTopics);
+}
+
+/**
+ * Refreshes all existing generation bias displays with the current bias
+ */
+function refreshGenerationBiasDisplay() {
+    if (!window.currentGenerationBias) {
+        return;
+    }
+
+    // Update all existing bias displays
+    $('.generation-bias-display').each(function() {
+        const biasDisplay = $(this);
+        biasDisplay.html(`<strong>🎭 Generation Bias:</strong> ${window.currentGenerationBias}`);
+    });
+}
+
+/**
+ * Updates the generation bias display when character settings change
+ * This should be called whenever personality traits or other generation settings are modified
+ */
+export function updateGenerationBiasFromCurrentCharacter() {
+    if (!this_chid || !characters[this_chid]) {
+        return;
+    }
+
+    const character = characters[this_chid];
+    const generationBias = getCharacterGenerationBias(character, chat.slice(-3).map(m => m.mes).join(' '));
+
+    if (generationBias) {
+        window.currentGenerationBias = generationBias;
+        refreshGenerationBiasDisplay();
+        console.log('[Generation Bias] Updated from character settings:', generationBias);
+    } else {
+        window.currentGenerationBias = null;
+        $('.generation-bias-display').remove();
+    }
+}
+
+/**
+ * Sets up event listeners for generation bias sliders and inputs
+ */
+function setupGenerationBiasListeners() {
+    // Remove existing listeners to avoid duplicates
+    $('#sarcasm_level, #empathy_level, #aggressiveness, #creativity_level, #memory_persistence, #response_length, #question_tendency, #key_memories, #dialogue_rules, #relationship_status').off('input change');
+
+    // Add listeners for all personality trait sliders and inputs
+    $('#sarcasm_level, #empathy_level, #aggressiveness, #creativity_level, #memory_persistence, #response_length, #question_tendency').on('input change', function() {
+        // Update the character data immediately
+        if (this_chid && characters[this_chid]) {
+            const fieldName = this.id;
+            characters[this_chid].data[fieldName] = parseInt($(this).val());
+        }
+        // Update generation bias display
+        updateGenerationBiasFromCurrentCharacter();
+    });
+
+    // Add listeners for text inputs
+    $('#key_memories, #dialogue_rules').on('input change', function() {
+        if (this_chid && characters[this_chid]) {
+            const fieldName = this.id;
+            characters[this_chid].data[fieldName] = $(this).val();
+        }
+        updateGenerationBiasFromCurrentCharacter();
+    });
+
+    // Add listener for relationship status dropdown
+    $('#relationship_status').on('change', function() {
+        if (this_chid && characters[this_chid]) {
+            characters[this_chid].data.relationship_status = $(this).val();
+        }
+        updateGenerationBiasFromCurrentCharacter();
+    });
+}
+
+/**
+ * Adds generation bias display to a message element
+ * @param {JQuery<HTMLElement>} messageElement Message element
+ */
+function addGenerationBiasDisplayToMessage(messageElement) {
+    if (!window.currentGenerationBias || messageElement.find('.generation-bias-display').length > 0) {
+        return;
+    }
+
+    // Create the bias display element
+    const biasDisplay = document.createElement('div');
+    biasDisplay.className = 'generation-bias-display';
+    biasDisplay.style.cssText = `
+        color: #ffd700;
+        font-style: italic;
+        font-size: 0.9em;
+        margin-top: 8px;
+        padding: 4px 8px;
+        background: rgba(255, 215, 0, 0.1);
+        border-left: 3px solid #ffd700;
+        border-radius: 4px;
+        opacity: 0.8;
+    `;
+    biasDisplay.innerHTML = `<strong>🎭 Generation Bias:</strong> ${window.currentGenerationBias}`;
+
+    // Insert after the message text
+    const messageText = messageElement.find('.mes_text');
+    if (messageText.length > 0) {
+        messageText.after(biasDisplay);
+    }
 }
 
 /**
@@ -2087,6 +2343,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.addClass('toolCall');
     }
 
+    applyTopicBadge(newMessage, mes?.extra?.aiTopics);
+
     //shows or hides the Prompt display button
     let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
 
@@ -2113,6 +2371,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         if (power_user.timestamp_model_icon && params.extra?.api) {
             insertSVGIcon(swipeMessage, params.extra);
         }
+        applyTopicBadge(swipeMessage, mes?.extra?.aiTopics);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
             swipeMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
@@ -2649,6 +2908,212 @@ export function baseChatReplace(value, name1, name2) {
 }
 
 /**
+ * Selects a topic from the character's topic list based on the selection mode.
+ * @param {object} character - The character object
+ * @param {string} [context] - Optional context for contextual selection
+ * @returns {string} Selected topic or empty string
+ */
+
+
+
+
+/**
+ * Gets the generation bias text for a character, including selected topic.
+ * @param {object} character - The character object
+ * @param {string} [context] - Optional context for topic selection
+ * @returns {string} Generation bias text
+ */
+/**
+ * Gets the generation bias text for a character, including the selected topic.
+ * This is a simplified and more robust version.
+ * @param {object} character - The character object
+ * @param {string} [context] - Optional context for topic selection
+ * @returns {string} Generation bias text
+ */
+export function getCharacterGenerationBias(character, context = '') {
+    if (!character?.data) {
+        return '';
+    }
+
+    let biasText = '';
+
+    // 1. Add the user-defined generation bias first
+    if (character.data.generation_bias) {
+        biasText += character.data.generation_bias;
+    }
+
+    // 2. Add personality traits
+    const personalityTraits = [];
+
+    // Sarcasm level
+    const sarcasmLevel = character.data.sarcasm_level || 5;
+    if (sarcasmLevel >= 8) {
+        personalityTraits.push('highly sarcastic');
+    } else if (sarcasmLevel >= 6) {
+        personalityTraits.push('moderately sarcastic');
+    } else if (sarcasmLevel >= 4) {
+        personalityTraits.push('occasionally sarcastic');
+    } else if (sarcasmLevel >= 2) {
+        personalityTraits.push('rarely sarcastic');
+    } else {
+        personalityTraits.push('never sarcastic');
+    }
+
+    // Empathy level
+    const empathyLevel = character.data.empathy_level || 5;
+    if (empathyLevel >= 8) {
+        personalityTraits.push('highly empathetic and caring');
+    } else if (empathyLevel >= 6) {
+        personalityTraits.push('moderately empathetic');
+    } else if (empathyLevel >= 4) {
+        personalityTraits.push('somewhat empathetic');
+    } else if (empathyLevel >= 2) {
+        personalityTraits.push('minimally empathetic');
+    } else {
+        personalityTraits.push('cold and indifferent');
+    }
+
+    // Aggressiveness
+    const aggressiveness = character.data.aggressiveness || 5;
+    if (aggressiveness >= 8) {
+        personalityTraits.push('highly confrontational and aggressive');
+    } else if (aggressiveness >= 6) {
+        personalityTraits.push('moderately aggressive');
+    } else if (aggressiveness >= 4) {
+        personalityTraits.push('somewhat confrontational');
+    } else if (aggressiveness >= 2) {
+        personalityTraits.push('mildly assertive');
+    } else {
+        personalityTraits.push('passive and non-confrontational');
+    }
+
+    // Creativity level
+    const creativityLevel = character.data.creativity_level || 5;
+    if (creativityLevel >= 8) {
+        personalityTraits.push('highly creative and surreal');
+    } else if (creativityLevel >= 6) {
+        personalityTraits.push('moderately creative');
+    } else if (creativityLevel >= 4) {
+        personalityTraits.push('somewhat creative');
+    } else if (creativityLevel >= 2) {
+        personalityTraits.push('minimally creative');
+    } else {
+        personalityTraits.push('literal and straightforward');
+    }
+
+    if (personalityTraits.length > 0) {
+        biasText += ` [Personality: ${personalityTraits.join(', ')}]`;
+    }
+
+    // 3. Add memory and context instructions
+    if (character.data.key_memories) {
+        const memories = character.data.key_memories.split('\n').filter(m => m.trim());
+        if (memories.length > 0) {
+            biasText += ` [Key memories to always remember: ${memories.join(', ')}]`;
+        }
+    }
+
+    // Memory persistence
+    const memoryPersistence = character.data.memory_persistence || 5;
+    if (memoryPersistence >= 8) {
+        biasText += ' [Reference past conversations very frequently]';
+    } else if (memoryPersistence >= 6) {
+        biasText += ' [Reference past conversations frequently]';
+    } else if (memoryPersistence >= 4) {
+        biasText += ' [Occasionally reference past conversations]';
+    } else if (memoryPersistence >= 2) {
+        biasText += ' [Rarely reference past conversations]';
+    } else {
+        biasText += ' [Focus on current conversation, never reference past]';
+    }
+
+    // Relationship status
+    const relationshipStatus = character.data.relationship_status || 'neutral';
+    const relationshipPrompts = {
+        'friendly': '[treat the user as a close friend]',
+        'adversarial': '[treat the user as an opponent or rival]',
+        'mentor': '[act as a wise mentor to the user]',
+        'romantic': '[treat the user with romantic interest]',
+        'rival': '[treat the user as a competitive rival]',
+        'protective': '[act protectively toward the user]'
+    };
+
+    if (relationshipPrompts[relationshipStatus]) {
+        biasText += ' ' + relationshipPrompts[relationshipStatus];
+    }
+
+    // 4. Add response control instructions
+    const responseLength = character.data.response_length || 5;
+    if (responseLength >= 8) {
+        biasText += ' [Provide very detailed, verbose responses]';
+    } else if (responseLength >= 6) {
+        biasText += ' [Provide detailed, verbose responses]';
+    } else if (responseLength >= 4) {
+        biasText += ' [Provide moderately detailed responses]';
+    } else if (responseLength >= 2) {
+        biasText += ' [Keep responses concise]';
+    } else {
+        biasText += ' [Keep responses very short and concise]';
+    }
+
+    const questionTendency = character.data.question_tendency || 5;
+    if (questionTendency >= 8) {
+        biasText += ' [Ask questions very frequently]';
+    } else if (questionTendency >= 6) {
+        biasText += ' [Ask questions frequently]';
+    } else if (questionTendency >= 4) {
+        biasText += ' [Ask questions occasionally]';
+    } else if (questionTendency >= 2) {
+        biasText += ' [Rarely ask questions]';
+    } else {
+        biasText += ' [Never ask questions]';
+    }
+
+    // Dialogue rules
+    if (character.data.dialogue_rules) {
+        const rules = character.data.dialogue_rules.split('\n').filter(r => r.trim());
+        if (rules.length > 0) {
+            biasText += ` [Dialogue rules: ${rules.join(', ')}]`;
+        }
+    }
+
+    // 5. Add response style influence
+    const responseStyle = character.data.response_style || 'default';
+    if (responseStyle !== 'default') {
+        const stylePrompts = {
+            'formal': '[respond in a formal professional manner]',
+            'casual': '[respond in a casual friendly manner]',
+            'playful': '[respond in a playful humorous manner]',
+            'mysterious': '[respond in a mysterious enigmatic manner]',
+            'aggressive': '[respond in an aggressive confrontational manner]',
+            'romantic': '[respond in a romantic affectionate manner]',
+            'professional': '[respond in a professional business-like manner]'
+        };
+
+        if (stylePrompts[responseStyle]) {
+            biasText += ' ' + stylePrompts[responseStyle];
+        }
+    }
+
+    const finalBias = biasText.trim();
+    if (finalBias) {
+        console.log('[DEBUG] Final generation bias:', finalBias);
+    }
+    return finalBias;
+}
+
+
+/**
+ * Creates natural topic integration based on character style
+ * @param {string} topic - The selected topic
+ * @param {string} style - The character's style
+ * @param {number} influenceStrength - How strong the influence should be
+ * @returns {string} Natural topic integration text
+ */
+
+
+
+/**
  * Returns the character card fields for the current character.
  * @param {object} [options]
  * @param {number} [options.chid] Optional character index
@@ -2694,11 +3159,31 @@ export function getCharacterCardFields({ chid = null } = {}) {
     result.personality = baseChatReplace(character.personality?.trim(), name1, name2);
     result.scenario = baseChatReplace(scenarioText.trim(), name1, name2);
     result.mesExamples = baseChatReplace(character.mes_example?.trim(), name1, name2);
+
+    // Prefer using the character's system prompt if available
     result.system = power_user.prefer_character_prompt ? baseChatReplace(character.data?.system_prompt?.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(character.data?.post_history_instructions?.trim(), name1, name2) : '';
     result.version = character.data?.character_version ?? '';
     result.charDepthPrompt = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2);
     result.creatorNotes = baseChatReplace(character.data?.creator_notes?.trim(), name1, name2);
+
+    // *** MODIFICATION START ***
+    // Add generation bias to the jailbreak/post-history prompt for recency.
+    if (character.data) {
+        const generationBias = getCharacterGenerationBias(character, chat.slice(-3).map(m => m.mes).join(' '));
+        if (generationBias) {
+            // This injects the topic instruction LATER in the context, making it more impactful.
+            result.jailbreak += (result.jailbreak ? '\n\n' : '') + generationBias;
+            console.log('[Generation Bias] Applied to post-history instructions:', generationBias);
+
+            // Store generation bias globally for UI display
+            window.currentGenerationBias = generationBias;
+
+            // Force refresh of any existing bias displays
+            refreshGenerationBiasDisplay();
+        }
+    }
+    // *** MODIFICATION END ***
 
     if (selected_group) {
         const groupCards = getGroupCharacterCards(selected_group, Number(currentChid));
@@ -2796,6 +3281,7 @@ class StreamingProcessor {
         /** @type {import('./scripts/logprobs.js').TokenLogprobs[]} */
         this.messageLogprobs = [];
         this.toolCalls = [];
+        this.biasDisplayAdded = false;
         // Initialize reasoning in its own handler
         this.reasoningHandler = new ReasoningHandler(timeStarted);
         /** @type {PromptReasoning} */
@@ -2942,6 +3428,11 @@ class StreamingProcessor {
             );
             if (this.messageTextDom instanceof HTMLElement) {
                 this.messageTextDom.innerHTML = formattedText;
+
+                // Add generation bias display if available
+                if (window.currentGenerationBias && !this.biasDisplayAdded) {
+                    this.addGenerationBiasDisplay();
+                }
             }
 
             const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration(), this.timeToFirstToken);
@@ -2962,6 +3453,26 @@ class StreamingProcessor {
         this.markUIGenStopped();
         await this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
+
+        // Clear the generation bias after generation is complete
+        window.currentGenerationBias = null;
+
+        // Auto-speak AI responses when streaming is finished
+        if (typeof window !== 'undefined' && window.voiceAudioController) {
+            try {
+                const ttsEnabled = document.getElementById('voice_audio_tts_enabled');
+                if (ttsEnabled && ttsEnabled.checked && text && text.trim().length > 0) {
+                    // Clean the text for TTS (remove HTML tags, special characters)
+                    const cleanText = text.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
+                    if (cleanText.length > 0) {
+                        console.log('Auto-speaking streaming AI response:', cleanText.substring(0, 100) + '...');
+                        window.voiceAudioController.speak(cleanText);
+                    }
+                }
+            } catch (error) {
+                console.error('Auto-TTS for streaming failed:', error);
+            }
+        }
 
         await this.reasoningHandler.finish(messageId);
 
@@ -3100,6 +3611,37 @@ class StreamingProcessor {
 
         this.isFinished = true;
         return this.result;
+    }
+
+    /**
+     * Adds a yellow italic display showing the generation bias being applied
+     */
+    addGenerationBiasDisplay() {
+        if (!window.currentGenerationBias || this.biasDisplayAdded) {
+            return;
+        }
+
+        // Create the bias display element
+        const biasDisplay = document.createElement('div');
+        biasDisplay.className = 'generation-bias-display';
+        biasDisplay.style.cssText = `
+            color: #ffd700;
+            font-style: italic;
+            font-size: 0.9em;
+            margin-top: 8px;
+            padding: 4px 8px;
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 3px solid #ffd700;
+            border-radius: 4px;
+            opacity: 0.8;
+        `;
+        biasDisplay.innerHTML = `<strong>🎭 Generation Bias:</strong> ${window.currentGenerationBias}`;
+
+        // Insert after the message text
+        if (this.messageTextDom && this.messageTextDom.parentNode) {
+            this.messageTextDom.parentNode.insertBefore(biasDisplay, this.messageTextDom.nextSibling);
+            this.biasDisplayAdded = true;
+        }
     }
 }
 
@@ -3886,6 +4428,65 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
+    const topicDirective = maybeGetTopicPrompt({ simulate: dryRun });
+    if (topicDirective) {
+        const directiveText = topicDirective.directive;
+        let injected = false;
+        let placementApplied = topicDirective.placement ?? 'system';
+
+        if (topicDirective.placement === 'user' && !isInstruct) {
+            let lastUserIndex = -1;
+            for (let index = coreChat.length - 1; index >= 0; index--) {
+                if (coreChat[index]?.is_user) {
+                    lastUserIndex = index;
+                    break;
+                }
+            }
+
+            if (lastUserIndex >= 0) {
+                const target = coreChat[lastUserIndex];
+                const suffix = target.mes?.endsWith('\n') ? '' : '\n';
+                target.mes = `${target.mes ?? ''}${suffix}\n${directiveText}`;
+                target.extra = {
+                    ...target.extra,
+                    aiTopics: {
+                        topic: topicDirective.topic,
+                        listName: topicDirective.listName,
+                        directive: directiveText,
+                        placement: 'user',
+                    },
+                };
+                injected = true;
+                placementApplied = 'user';
+            }
+        }
+
+        if (!injected) {
+            placementApplied = 'system';
+            coreChat.push({
+                name: systemUserName,
+                mes: directiveText,
+                is_user: false,
+                is_system: true,
+                extra: {
+                    type: system_message_types.NARRATOR,
+                    aiTopics: {
+                        topic: topicDirective.topic,
+                        listName: topicDirective.listName,
+                        directive: directiveText,
+                        placement: placementApplied,
+                    },
+                },
+            });
+        }
+    } else {
+        for (const message of coreChat) {
+            if (message?.extra?.aiTopics) {
+                delete message.extra.aiTopics;
+            }
+        }
+    }
+
     let chat2 = [];
     let continue_mag = '';
     const userMessageIndices = [];
@@ -4633,9 +5234,11 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (isImpersonate) {
             $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
+            consumeTopicDirective();
         }
         else if (type == 'quiet') {
             unblockGeneration(type);
+            consumeTopicDirective();
             return getMessage;
         }
         else {
@@ -4709,6 +5312,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         unblockGeneration(type);
         console.log(exception);
         streamingProcessor = null;
+        consumeTopicDirective();
         throw exception;
     }
 }
@@ -4729,6 +5333,7 @@ export function stopGeneration() {
         stopped = true;
     }
     eventSource.emit(event_types.GENERATION_STOPPED);
+    consumeTopicDirective();
     return stopped;
 }
 
@@ -5669,12 +6274,36 @@ async function processImageAttachment(message, { imageUrl }) {
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
+function attachTopicDirectiveToMessage(message, directive) {
+    if (!message) {
+        return;
+    }
+
+    if (!message.extra || typeof message.extra !== 'object') {
+        message.extra = {};
+    }
+
+    if (!directive) {
+        delete message.extra.aiTopics;
+        return;
+    }
+
+    message.extra.aiTopics = {
+        topic: directive.topic,
+        listName: directive.listName ?? null,
+        directive: directive.directive ?? '',
+        placement: directive.placement ?? 'system',
+    };
+}
+
 export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrl = '' }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
         [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrl] = arguments;
     }
+
+    const topicDirective = consumeTopicDirective();
 
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
@@ -5709,6 +6338,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             chat[chat.length - 1]['extra']['reasoning'] = reasoning;
             chat[chat.length - 1]['extra']['reasoning_duration'] = null;
+            attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
             await processImageAttachment(chat[chat.length - 1], { imageUrl });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -5720,6 +6350,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
+            attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         }
     } else if (type === 'append' || type === 'continue') {
         console.debug('Trying to append.');
@@ -5734,6 +6365,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['reasoning'] = reasoning;
         chat[chat.length - 1]['extra']['reasoning_duration'] = null;
         await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
             chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(tokenCountText, 0);
@@ -5754,6 +6386,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         chat[chat.length - 1]['extra']['reasoning'] += reasoning;
         await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + chat[chat.length - 1]['mes'];
@@ -5800,6 +6433,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         }
 
         await processImageAttachment(chat[chat.length - 1], { imageUrl });
+        attachTopicDirectiveToMessage(chat[chat.length - 1], topicDirective);
         const chat_id = (chat.length - 1);
 
         !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
@@ -7556,7 +8190,21 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#post_history_instructions_textarea').val(characters[chid].data?.post_history_instructions || '');
     $('#tags_textarea').val(Array.isArray(characters[chid].data?.tags) ? characters[chid].data.tags.join(', ') : '');
     $('#creator_textarea').val(characters[chid].data?.creator);
-    $('#character_version_textarea').val(characters[chid].data?.character_version || '');
+
+    // Load personality trait sliders
+    $('#sarcasm_level').val(characters[chid].data?.sarcasm_level || 5);
+    $('#empathy_level').val(characters[chid].data?.empathy_level || 5);
+    $('#aggressiveness').val(characters[chid].data?.aggressiveness || 5);
+    $('#creativity_level').val(characters[chid].data?.creativity_level || 5);
+    $('#memory_persistence').val(characters[chid].data?.memory_persistence || 5);
+    $('#response_length').val(characters[chid].data?.response_length || 5);
+    $('#question_tendency').val(characters[chid].data?.question_tendency || 5);
+    $('#key_memories').val(characters[chid].data?.key_memories || '');
+    $('#dialogue_rules').val(characters[chid].data?.dialogue_rules || '');
+    $('#relationship_status').val(characters[chid].data?.relationship_status || 'neutral');
+
+    // Add event listeners for real-time generation bias updates
+    setupGenerationBiasListeners();
     $('#personality_textarea').val(characters[chid].personality);
     $('#firstmessage_textarea').val(characters[chid].first_mes);
     $('#scenario_pole').val(characters[chid].scenario);
@@ -7565,6 +8213,23 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#depth_prompt_role').val(characters[chid].data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
     $('#talkativeness_slider').val(characters[chid].talkativeness || talkativeness_default);
     $('#mes_example_textarea').val(characters[chid].mes_example);
+    // New generation settings
+    $('#generation_bias_textarea').val(characters[chid].data?.generation_bias || '');
+    $('#response_style_select').val(characters[chid].data?.response_style || 'balanced');
+    $('#generation_temperature').val(characters[chid].data?.generation_temperature || 0.7);
+    // Personality traits
+    $('#sarcasm_level').val(characters[chid].data?.sarcasm_level || 5);
+    $('#empathy_level').val(characters[chid].data?.empathy_level || 5);
+    $('#aggressiveness').val(characters[chid].data?.aggressiveness || 5);
+    $('#creativity_level').val(characters[chid].data?.creativity_level || 5);
+    // Memory & context
+    $('#key_memories_textarea').val(characters[chid].data?.key_memories || '');
+    $('#memory_persistence').val(characters[chid].data?.memory_persistence || 5);
+    $('#relationship_status').val(characters[chid].data?.relationship_status || 'neutral');
+    // Response control
+    $('#response_length').val(characters[chid].data?.response_length || 5);
+    $('#question_tendency').val(characters[chid].data?.question_tendency || 5);
+    $('#dialogue_rules_textarea').val(characters[chid].data?.dialogue_rules || '');
     $('#selected_chat_pole').val(characters[chid].chat);
     $('#create_date_pole').val(characters[chid].create_date);
     $('#avatar_url_pole').val(characters[chid].avatar);
@@ -8367,6 +9032,23 @@ async function createOrEditCharacter(e) {
                 { id: '#depth_prompt_role', callback: value => create_save.depth_prompt_role = value, defaultValue: depth_prompt_role_default },
                 { id: '#mes_example_textarea', callback: value => create_save.mes_example = value },
                 { id: '#character_json_data', callback: () => { } },
+                // New generation settings fields
+                { id: '#generation_bias_textarea', callback: value => create_save.generation_bias = value },
+                { id: '#response_style_select', callback: value => create_save.response_style = value },
+                { id: '#generation_temperature', callback: value => create_save.generation_temperature = parseFloat(value) },
+                // Personality traits
+                { id: '#sarcasm_level', callback: value => create_save.sarcasm_level = parseInt(value) },
+                { id: '#empathy_level', callback: value => create_save.empathy_level = parseInt(value) },
+                { id: '#aggressiveness', callback: value => create_save.aggressiveness = parseInt(value) },
+                { id: '#creativity_level', callback: value => create_save.creativity_level = parseInt(value) },
+                // Memory & context
+                { id: '#key_memories_textarea', callback: value => create_save.key_memories = value },
+                { id: '#memory_persistence', callback: value => create_save.memory_persistence = parseInt(value) },
+                { id: '#relationship_status', callback: value => create_save.relationship_status = value },
+                // Response control
+                { id: '#response_length', callback: value => create_save.response_length = parseInt(value) },
+                { id: '#question_tendency', callback: value => create_save.question_tendency = parseInt(value) },
+                { id: '#dialogue_rules_textarea', callback: value => create_save.dialogue_rules = value },
                 { id: '#alternate_greetings_template', callback: value => create_save.alternate_greetings = value, defaultValue: [] },
                 { id: '#character_world', callback: value => create_save.world = value },
                 { id: '#_character_extensions_fake', callback: value => create_save.extensions = {} },
@@ -9770,6 +10452,23 @@ jQuery(async function () {
         '#depth_prompt_prompt': function () { create_save.depth_prompt_prompt = String($('#depth_prompt_prompt').val()); },
         '#depth_prompt_depth': function () { create_save.depth_prompt_depth = Number($('#depth_prompt_depth').val()); },
         '#depth_prompt_role': function () { create_save.depth_prompt_role = String($('#depth_prompt_role').val()); },
+        // New generation settings
+        '#generation_bias_textarea': function () { create_save.generation_bias = String($('#generation_bias_textarea').val()); },
+        '#response_style_select': function () { create_save.response_style = String($('#response_style_select').val()); },
+        '#generation_temperature': function () { create_save.generation_temperature = parseFloat($('#generation_temperature').val()); },
+        // Personality traits
+        '#sarcasm_level': function () { create_save.sarcasm_level = parseInt($('#sarcasm_level').val()); },
+        '#empathy_level': function () { create_save.empathy_level = parseInt($('#empathy_level').val()); },
+        '#aggressiveness': function () { create_save.aggressiveness = parseInt($('#aggressiveness').val()); },
+        '#creativity_level': function () { create_save.creativity_level = parseInt($('#creativity_level').val()); },
+        // Memory & context
+        '#key_memories_textarea': function () { create_save.key_memories = String($('#key_memories_textarea').val()); },
+        '#memory_persistence': function () { create_save.memory_persistence = parseInt($('#memory_persistence').val()); },
+        '#relationship_status': function () { create_save.relationship_status = String($('#relationship_status').val()); },
+        // Response control
+        '#response_length': function () { create_save.response_length = parseInt($('#response_length').val()); },
+        '#question_tendency': function () { create_save.question_tendency = parseInt($('#question_tendency').val()); },
+        '#dialogue_rules_textarea': function () { create_save.dialogue_rules = String($('#dialogue_rules_textarea').val()); },
     };
 
     Object.keys(elementsToUpdate).forEach(function (id) {
