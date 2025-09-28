@@ -12,7 +12,7 @@ import {
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
-import { applyWordLimitIfNeeded } from './scripts/word-limit.js';
+import { applyWordLimitIfNeeded, clearActiveWordLimit, getActiveWordLimit, setActiveWordLimit } from './scripts/word-limit.js';
 import {
     voiceAudioController,
     initializeVoiceAudio,
@@ -10159,6 +10159,28 @@ jQuery(async function () {
 
     $(document).on('click', '.api_loading', () => cancelStatusCheck('Canceled because connecting was manually canceled'));
 
+    const wordLimitMenuItem = $('#option_word_limit');
+    const wordLimitLabel = $('#option_word_limit_label');
+    const wordLimitBaseLabel = t`Word limit`;
+    const wordLimitOffLabel = t`Off`;
+
+    function refreshWordLimitLabel() {
+        if (!wordLimitLabel.length) {
+            return;
+        }
+
+        const limit = getActiveWordLimit();
+        const labelText = limit ? `${wordLimitBaseLabel}: ${limit}` : `${wordLimitBaseLabel}: ${wordLimitOffLabel}`;
+        wordLimitLabel.text(labelText);
+        if (wordLimitMenuItem.length) {
+            wordLimitMenuItem.toggleClass('active', Boolean(limit));
+            wordLimitMenuItem.attr('aria-pressed', limit ? 'true' : 'false');
+        }
+    }
+
+    refreshWordLimitLabel();
+    eventSource.on(event_types.CHAT_CHANGED, refreshWordLimitLabel);
+
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
     let S_TAPreviouslyFocused = false;
     $('#send_textarea').on('focusin focus click', () => {
@@ -10171,7 +10193,7 @@ jQuery(async function () {
     });
     $(document).on('click', event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
-            var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
+            var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue', 'option_word_limit'];
             if (!validIDs.includes($(event.target).attr('id'))) {
                 S_TAPreviouslyFocused = false;
             }
@@ -10720,6 +10742,41 @@ jQuery(async function () {
 
         else if (id == 'option_delete_mes') {
             setTimeout(() => openMessageDelete(fromSlashCommand), animation_duration);
+        }
+
+        else if (id === 'option_word_limit') {
+            hideMenu();
+
+            const currentLimit = getActiveWordLimit();
+            const header = t`Word limit`;
+            const instructions = `<p>${t`Enter the maximum number of words for assistant replies.`}</p><p>${t`Leave the field empty to disable the limit.`}</p>`;
+            const defaultValue = currentLimit ? String(currentLimit) : '';
+            const value = await Popup.show.input(header, instructions, defaultValue, { okButton: t`Save`, cancelButton: t`Cancel` });
+
+            if (value === null) {
+                return;
+            }
+
+            const trimmed = value.trim();
+
+            if (!trimmed) {
+                clearActiveWordLimit();
+                refreshWordLimitLabel();
+                toastr.info(t`Word limit disabled.`);
+                return;
+            }
+
+            const parsedLimit = Number.parseInt(trimmed, 10);
+
+            if (!Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+                toastr.warning(t`Please enter a positive number.`);
+                return;
+            }
+
+            setActiveWordLimit(parsedLimit);
+            refreshWordLimitLabel();
+            toastr.success(t`Word limit updated.`);
+            return;
         }
 
         else if (id == 'option_close_chat') {
