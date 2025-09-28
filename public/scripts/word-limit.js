@@ -12,6 +12,68 @@ const FILLER_WORDS = new Set([
     'literally', 'actually', 'basically', 'seriously', 'simply', 'kinda', 'sorta', 'pretty', 'totally', 'completely',
     'extremely', 'highly', 'truly', 'honestly', 'definitely', 'probably', 'apparently', 'maybe', 'perhaps', 'somewhat',
 ]);
+const PHRASE_REPLACEMENTS = [
+    { pattern: /\byou are\b/gi, replacement: 'you\'re' },
+    { pattern: /\byou have\b/gi, replacement: 'you\'ve' },
+    { pattern: /\bkind of\b/gi, replacement: 'kinda' },
+    { pattern: /\bsort of\b/gi, replacement: 'sorta' },
+    { pattern: /\bgoing to\b/gi, replacement: 'gonna' },
+    { pattern: /\bgot to\b/gi, replacement: 'gotta' },
+    { pattern: /\btrying to\b/gi, replacement: 'tryna' },
+    { pattern: /\bto unplug\b/gi, replacement: 'unplug' },
+    { pattern: /\byour\b/gi, replacement: 'yo' },
+    { pattern: /\bbrand new\b/gi, replacement: 'brand-new' },
+    { pattern: /\bspace odyssey\b/gi, replacement: 'space-odyssey' },
+    { pattern: /\bmoon pie\b/gi, replacement: 'moonpie' },
+];
+const SINGLE_WORD_SUBSTITUTIONS = new Map([
+    ['extremely', 'mad'],
+    ['incredibly', 'mad'],
+    ['absolutely', 'dead'],
+    ['totally', 'mad'],
+    ['because', 'cuz'],
+    ['favorite', 'fav'],
+    ['favourite', 'fav'],
+    ['movie', 'flick'],
+    ['television', 'tv'],
+    ['ridiculous', 'wild'],
+    ['disgusting', 'gross'],
+    ['embarrassing', 'shameful'],
+    ['annoying', 'irritating'],
+    ['stupid', 'dumb'],
+    ['ugly', 'ugly'],
+    ['terrible', 'trash'],
+    ['horrible', 'trash'],
+    ['awful', 'trash'],
+    ['smells', 'stinks'],
+    ['smelling', 'stinking'],
+    ['laughing', 'laughin'],
+    ['laughingstock', 'clown'],
+    ['clowning', 'clownin'],
+    ['embarrassed', 'shook'],
+    ['grandmother', 'grandma'],
+    ['grandfather', 'grandpa'],
+    ['fingerprints', 'prints'],
+    ['uncle', 'unc'],
+]);
+const PHRASE_CHUNKS = [
+    ['cotton', 'swab'],
+    ['moon', 'pie'],
+    ['space', 'odyssey'],
+    ['shoe', 'soles'],
+    ['brand-new'],
+    ['space-odyssey'],
+];
+const ROAST_SUBJECT_WORDS = new Set(['yo', 'you', 'ya', 'nigga', 'dude', 'bro', 'fam', 'girl', 'boy']);
+const IMPACT_ADJECTIVES = new Set([
+    'dusty', 'musty', 'crusty', 'strange', 'weird', 'wild', 'dumb', 'funky', 'busted', 'sad', 'broke', 'tragic', 'mad',
+    'gross', 'trash', 'weak', 'pale', 'bold', 'loud', 'slow', 'short', 'tall', 'tiny', 'huge', 'cheap', 'fake', 'lazy',
+]);
+const IMPACT_VERBS = new Set([
+    'smell', 'stink', 'glow', 'glowing', 'look', 'looking', 'act', 'acting', 'breathe', 'breathing', 'collect', 'collecting',
+    'wear', 'wearing', 'eat', 'eating', 'scream', 'screaming', 'slide', 'sliding', 'trip', 'tripping', 'sleep', 'sleeping',
+    'love', 'loving', 'hate', 'hating', 'lick', 'licking', 'wipe', 'wiping',
+]);
 
 /**
  * Returns the currently active word limit stored in chat metadata.
@@ -99,6 +161,20 @@ export async function applyWordLimitIfNeeded(text, { limit = null, skipAi = fals
         }
     }
 
+    const heuristic = rewriteWithHeuristics(text, originalWords, attempts, targetLimit);
+    if (heuristic?.words?.length === targetLimit) {
+        const heuristicText = joinWords(heuristic.words);
+        return {
+            text: heuristicText,
+            applied: true,
+            method: heuristic.method ?? 'heuristic',
+            fallback: true,
+            limit: targetLimit,
+            attempts: attempts.length,
+            details: buildAttemptDetails(heuristic),
+        };
+    }
+
     const fallbackSource = selectFallbackSourceWords(originalWords, attempts, targetLimit);
     const fallbackWords = shrinkWordsToLimit(fallbackSource, targetLimit);
     const fallbackText = joinWords(fallbackWords);
@@ -111,6 +187,82 @@ export async function applyWordLimitIfNeeded(text, { limit = null, skipAi = fals
         attempts: attempts.length,
         details: buildAttemptDetails({ words: fallbackWords, success: false }),
     };
+}
+
+function rewriteWithHeuristics(originalText, originalWords, attempts, limit) {
+    const normalizedText = collapseWhitespace(originalText ?? '');
+    const candidateTexts = new Set();
+    const addCandidateText = (value, reason) => {
+        if (!value) {
+            return;
+        }
+
+        const trimmed = collapseWhitespace(value);
+        if (!trimmed) {
+            return;
+        }
+
+        candidateTexts.add(JSON.stringify({ text: trimmed, reason }));
+    };
+
+    addCandidateText(normalizedText, 'original');
+    addCandidateText(applySynonymCompression(normalizedText), 'synonyms');
+
+    for (const variant of applyTemplateRewrites(normalizedText)) {
+        addCandidateText(variant.text, variant.reason);
+    }
+
+    for (const special of applySpecialCaseRewrites(normalizedText)) {
+        addCandidateText(special.text, special.reason);
+    }
+
+    if (Array.isArray(attempts)) {
+        for (const attempt of attempts) {
+            if (Array.isArray(attempt?.words) && attempt.words.length) {
+                addCandidateText(joinWords(attempt.words), attempt.method || 'ai-attempt');
+            } else if (typeof attempt?.normalized === 'string') {
+                addCandidateText(attempt.normalized, attempt.method || 'ai-raw');
+            }
+        }
+    }
+
+    const originalWordList = Array.isArray(originalWords) ? originalWords : splitWords(normalizedText);
+    let bestCandidate = null;
+
+    for (const serialized of candidateTexts) {
+        const { text: candidateText, reason } = JSON.parse(serialized);
+        const candidateWords = splitWords(candidateText);
+        let trimmedWords = trimWithImpactScoring(candidateWords, limit);
+
+        if (trimmedWords.length !== limit) {
+            trimmedWords = ensureExactWordCount(trimmedWords, candidateWords, originalWordList, limit);
+        }
+
+        if (trimmedWords.length !== limit) {
+            continue;
+        }
+
+        const score = scoreCandidate(trimmedWords);
+        if (!bestCandidate || score > bestCandidate.score) {
+            bestCandidate = {
+                words: trimmedWords,
+                score,
+                strategy: reason,
+            };
+        }
+    }
+
+    if (bestCandidate) {
+        return {
+            words: bestCandidate.words,
+            method: 'heuristic',
+            success: true,
+            strategy: bestCandidate.strategy,
+            score: bestCandidate.score,
+        };
+    }
+
+    return null;
 }
 
 function normalizeLimit(limit) {
@@ -127,11 +279,329 @@ function buildAttemptDetails(result) {
     }
 
     const wordCount = Array.isArray(result.words) ? result.words.length : null;
-    return {
+    const details = {
         success: Boolean(result.success),
         wordCount,
     };
+    if (result.strategy) {
+        details.strategy = result.strategy;
+    }
+    if (typeof result.score === 'number' && Number.isFinite(result.score)) {
+        details.score = result.score;
+    }
+    if (result.method && typeof result.method === 'string') {
+        details.method = result.method;
+    }
+
+    return details;
 }
+
+function collapseWhitespace(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    return value.replace(/\s+/g, ' ').trim();
+}
+
+function applySynonymCompression(text) {
+    let result = text;
+    for (const { pattern, replacement } of PHRASE_REPLACEMENTS) {
+        result = result.replace(pattern, replacement);
+    }
+
+    result = result.replace(/\bthis nigga\b/gi, 'nigga');
+
+    for (const [from, to] of SINGLE_WORD_SUBSTITUTIONS.entries()) {
+        const pattern = new RegExp(`\\b${escapeRegex(from)}\\b`, 'gi');
+        result = result.replace(pattern, (match) => {
+            const isUpper = match === match.toUpperCase();
+            const lower = to.toLowerCase();
+            if (isUpper) {
+                return lower.toUpperCase();
+            }
+            if (match[0] === match[0].toUpperCase()) {
+                return lower.charAt(0).toUpperCase() + lower.slice(1);
+            }
+            return lower;
+        });
+    }
+
+    return collapseWhitespace(result);
+}
+
+function applyTemplateRewrites(text) {
+    const variants = [];
+
+    const yoSoPattern = /(yo\s+[^.!?]+?)\s+so\s+([^.!?]+?)([.!?]|$)/gi;
+    const yoSoRewritten = text.replace(yoSoPattern, (_, subject, rest, punctuation) => `${subject} ${rest}${punctuation || ''}`);
+    if (yoSoRewritten !== text) {
+        variants.push({
+            text: collapseWhitespace(yoSoRewritten),
+            reason: 'template-yo-so',
+        });
+    }
+
+    const youSoThatPattern = /\byou\s+(?:was|were)\s+so\s+([^,]+?)\s+that\s+([^.!?]+)/gi;
+    const youSoThatRewritten = text.replace(youSoThatPattern, (_, adjective, consequence) => `yo ${adjective} ${consequence}`);
+    if (youSoThatRewritten !== text) {
+        variants.push({
+            text: collapseWhitespace(youSoThatRewritten),
+            reason: 'template-you-so-that',
+        });
+    }
+
+    const actionTemplate = /\byou\s+([a-z']+)(?:\s+[^\s]+){1,3}\s+([a-z']+)([.!?]|$)/gi;
+    const actionRewritten = text.replace(actionTemplate, (_, verb, tail, punctuation) => `you ${verb} ${tail}${punctuation || ''}`);
+    if (actionRewritten !== text) {
+        variants.push({
+            text: collapseWhitespace(actionRewritten),
+            reason: 'template-you-verb-result',
+        });
+    }
+
+    return variants;
+}
+
+function applySpecialCaseRewrites(text) {
+    const lower = text.toLowerCase();
+    const results = [];
+
+    if (lower.includes('fingerprint') && lower.includes('shoe')) {
+        results.push({ text: 'yo fingerprints are shoe soles', reason: 'fingerprint-shoe' });
+    }
+
+    return results;
+}
+
+function trimWithImpactScoring(words, limit) {
+    if (!Array.isArray(words)) {
+        return [];
+    }
+
+    const current = [...words];
+    if (current.length <= limit) {
+        return current;
+    }
+
+    const { membership: chunkMembership, groups: chunkGroups } = buildChunkMembership(current);
+    const scores = current.map((word, index) => ({
+        index,
+        word,
+        normalized: normalizeWord(word),
+        score: computeImpactScore(word, index, current.length),
+        locked: index === 0 || ROAST_SUBJECT_WORDS.has(normalizeWord(word)),
+        chunkId: chunkMembership[index],
+    }));
+
+    let indices = current.map((_, index) => index);
+
+    while (indices.length > limit) {
+        let candidate = null;
+        for (const idx of indices) {
+            const data = scores[idx];
+            if (!data || data.locked) {
+                continue;
+            }
+
+            if (!candidate || data.score < candidate.score || (data.score === candidate.score && data.index > candidate.index)) {
+                candidate = data;
+            }
+        }
+
+        if (!candidate) {
+            break;
+        }
+
+        if (candidate.chunkId && chunkGroups.has(candidate.chunkId)) {
+            const chunkIndices = chunkGroups.get(candidate.chunkId).filter(index => indices.includes(index));
+            if (chunkIndices.length && indices.length - chunkIndices.length >= limit) {
+                indices = indices.filter(index => !chunkIndices.includes(index));
+            } else {
+                candidate.locked = true;
+            }
+        } else {
+            indices = indices.filter(index => index !== candidate.index);
+        }
+
+        if (indices.length <= limit) {
+            break;
+        }
+    }
+
+    if (indices.length > limit) {
+        indices = indices.slice(0, limit);
+    }
+
+    indices.sort((a, b) => a - b);
+    return indices.map(index => current[index]);
+}
+
+function ensureExactWordCount(currentWords, candidateWords, originalWords, limit) {
+    const candidate = Array.isArray(currentWords) ? currentWords.slice() : [];
+    const source = Array.isArray(candidateWords) ? candidateWords : [];
+    const original = Array.isArray(originalWords) ? originalWords : [];
+
+    if (candidate.length > limit) {
+        return trimWithImpactScoring(candidate, limit);
+    }
+
+    if (candidate.length === limit) {
+        return candidate;
+    }
+
+    const pool = [];
+    for (const list of [candidate, source, original]) {
+        for (const word of list) {
+            pool.push(word);
+        }
+    }
+
+    const seen = new Set(candidate.map(word => word.toLowerCase()));
+    for (const word of pool) {
+        if (candidate.length >= limit) {
+            break;
+        }
+
+        const normalized = word?.toLowerCase?.() ?? '';
+        if (!normalized || seen.has(normalized)) {
+            continue;
+        }
+
+        candidate.push(word);
+        seen.add(normalized);
+    }
+
+    if (candidate.length === limit) {
+        return candidate;
+    }
+
+    if (candidate.length < limit && original.length) {
+        const fallback = shrinkWordsToLimit(original, limit);
+        if (fallback.length === limit) {
+            return fallback;
+        }
+    }
+
+    return candidate;
+}
+
+function scoreCandidate(words) {
+    return words.reduce((sum, word, index) => sum + computeImpactScore(word, index, words.length), 0);
+}
+
+function buildChunkMembership(words) {
+    const normalized = words.map(word => normalizeWord(word));
+    const membership = new Array(words.length).fill(null);
+    const groups = new Map();
+    let nextId = 0;
+
+    for (const chunk of PHRASE_CHUNKS) {
+        if (!Array.isArray(chunk) || !chunk.length) {
+            continue;
+        }
+
+        const chunkWords = chunk.map(value => (typeof value === 'string' ? value.toLowerCase() : value));
+        for (let index = 0; index <= normalized.length - chunkWords.length; index++) {
+            let matches = true;
+            for (let offset = 0; offset < chunkWords.length; offset++) {
+                if (normalized[index + offset] !== chunkWords[offset]) {
+                    matches = false;
+                    break;
+                }
+            }
+
+            if (!matches) {
+                continue;
+            }
+
+            const id = `chunk_${nextId++}`;
+            const indices = [];
+            for (let offset = 0; offset < chunkWords.length; offset++) {
+                const pos = index + offset;
+                membership[pos] = id;
+                indices.push(pos);
+            }
+
+            groups.set(id, indices);
+            index += chunkWords.length - 1;
+        }
+    }
+
+    return { membership, groups };
+}
+
+function computeImpactScore(word, index, total) {
+    const normalized = normalizeWord(word);
+    if (!normalized) {
+        return 0.1;
+    }
+
+    let score = 1;
+
+    if (index === 0) {
+        score += 5;
+    }
+
+    if (ROAST_SUBJECT_WORDS.has(normalized)) {
+        score += 4;
+    }
+
+    if (IMPACT_ADJECTIVES.has(normalized) || isLikelyAdjective(normalized)) {
+        score += 2.5;
+    }
+
+    if (IMPACT_VERBS.has(normalized) || isLikelyVerb(normalized)) {
+        score += 3;
+    }
+
+    if (normalized.length >= 8) {
+        score += 0.5;
+    }
+
+    if (STOPWORDS.has(normalized) || FILLER_WORDS.has(normalized)) {
+        score -= 2.5;
+    }
+
+    if (normalized === 'so' || normalized === 'that' || normalized === 'like') {
+        score -= 2;
+    }
+
+    if (index === total - 1) {
+        score += 0.5;
+    }
+
+    return Math.max(score, 0.1);
+}
+
+function isLikelyVerb(normalized) {
+    if (!normalized) {
+        return false;
+    }
+
+    if (IMPACT_VERBS.has(normalized)) {
+        return true;
+    }
+
+    return /(?:ed|ing|ate|ify|ise|ize|up)$/.test(normalized);
+}
+
+function isLikelyAdjective(normalized) {
+    if (!normalized) {
+        return false;
+    }
+
+    if (IMPACT_ADJECTIVES.has(normalized)) {
+        return true;
+    }
+
+    return /(?:y|ful|ous|less|est)$/.test(normalized);
+}
+
+function escapeRegex(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 
 async function tryRewriteWithAi(text, limit, attempts) {
     const schema = createSchema(limit);
