@@ -300,6 +300,25 @@ import {
     consumeTopicDirective,
 } from './scripts/supertavern-settings.js';
 import { getContext } from './scripts/st-context.js';
+import './scripts/supertavern-settings-clean.js';
+import './scripts/ai-enhancement-controller.js';
+import './scripts/ai-enhancement-interface.js';
+import './scripts/analytics-dashboard-controller.js';
+import './scripts/analytics-dashboard-interface.js';
+import './scripts/audio-studio-controller.js';
+import './scripts/audio-studio-interface.js';
+import './scripts/automation-controller.js';
+import './scripts/automation-interface.js';
+import './scripts/developer-tools-controller.js';
+import './scripts/developer-tools-interface.js';
+import './scripts/search-discovery-controller.js';
+import './scripts/search-discovery-interface.js';
+import './scripts/text-utilities-controller.js';
+import './scripts/text-utilities-interface.js';
+import './scripts/visual-effects-controller.js';
+import './scripts/visual-effects-interface.js';
+import './scripts/voice-audio-controller.js';
+import './scripts/voice-audio-interface.js';
 import { extractReasoningFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
