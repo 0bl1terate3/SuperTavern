@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Limit Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+
+        input {
+            margin: 5px;
+            padding: 5px;
+            width: 200px;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Word Limit Functionality Test</h1>
+
+    <div class="test-section">
+        <h3>Test Word Limit Application</h3>
+        <p>Enter text and set a word limit to test the functionality:</p>
+        <input type="text" id="testText" placeholder="Enter test text..."
+            value="instead of a bat signal you got a squawking pigeon signal from the rooftop">
+        <br>
+        <input type="number" id="wordLimit" placeholder="Word limit" value="7" min="1" max="50">
+        <br>
+        <button onclick="testWordLimit()">Test Word Limit</button>
+        <button onclick="testWithAI()">Test with AI Rewriting</button>
+        <button onclick="testIntelligentSelection()">Test Intelligent Selection</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        // Mock the required dependencies
+        const mockChatMetadata = {};
+        const mockSaveChatDebounced = () => { };
+        const mockGenerateQuietPrompt = async (options) => {
+            // Simulate AI response
+            const words = options.quietPrompt.includes('Original text to compress:')
+                ? options.quietPrompt.split('Original text to compress:')[1].trim().split(/\s+/).slice(0, parseInt(options.quietPrompt.match(/\d+/)[0]))
+                : ['yo', 'uncle', 'wallet', 'drier', 'sahara', 'opened', 'fly'];
+
+            return JSON.stringify({ words });
+        };
+
+        // Import the word limit functions (we'll need to adapt this for browser)
+        // For now, let's create a simplified version
+
+        function getActiveWordLimit() {
+            const limit = mockChatMetadata.word_limit;
+            if (typeof limit !== 'number' || !Number.isFinite(limit) || limit <= 0) {
+                return null;
+            }
+            return Math.floor(limit);
+        }
+
+        function setActiveWordLimit(limit) {
+            if (typeof limit !== 'number' || !Number.isFinite(limit) || limit <= 0) {
+                delete mockChatMetadata.word_limit;
+            } else {
+                mockChatMetadata.word_limit = Math.max(1, Math.floor(limit));
+            }
+        }
+
+        function splitWords(text) {
+            if (!text) return [];
+            return text.trim().split(/\s+/).filter(Boolean);
+        }
+
+        function joinWords(words) {
+            return words.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        }
+
+        async function applyWordLimitIfNeeded(text, options = {}) {
+            if (!text) {
+                return { text, applied: false };
+            }
+
+            const targetLimit = options.limit ?? getActiveWordLimit();
+            if (!targetLimit) {
+                return { text, applied: false };
+            }
+
+            const originalWords = splitWords(text);
+            console.log('Word limit processing:', {
+                text: text.substring(0, 100),
+                originalWordsLength: originalWords.length,
+                originalWords: originalWords.slice(0, 10),
+                targetLimit
+            });
+
+            if (originalWords.length <= targetLimit) {
+                return { text, applied: false, limit: targetLimit };
+            }
+
+            // Try intelligent word selection
+            const intelligentResult = tryIntelligentWordSelection(text, targetLimit);
+            if (intelligentResult) {
+                return {
+                    text: intelligentResult,
+                    applied: true,
+                    method: 'intelligent',
+                    limit: targetLimit,
+                };
+            }
+
+            // Fallback to simple truncation
+            const truncated = originalWords.slice(0, targetLimit).join(' ');
+            return {
+                text: truncated,
+                applied: true,
+                method: 'truncation',
+                limit: targetLimit,
+            };
+        }
+
+        function tryIntelligentWordSelection(text, limit) {
+            const words = splitWords(text);
+            if (words.length <= limit) {
+                return null;
+            }
+
+            // Simple intelligent selection: keep important words
+            const importantWords = words.filter(word => {
+                const normalized = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+                return normalized.length > 2 && !['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'].includes(normalized);
+            });
+
+            if (importantWords.length >= limit) {
+                return importantWords.slice(0, limit).join(' ');
+            }
+
+            return null;
+        }
+
+        // Test functions
+        window.testWordLimit = async function () {
+            const text = document.getElementById('testText').value;
+            const limit = parseInt(document.getElementById('wordLimit').value);
+
+            setActiveWordLimit(limit);
+            const result = await applyWordLimitIfNeeded(text);
+
+            displayResult('Word Limit Test', {
+                original: text,
+                result: result.text,
+                applied: result.applied,
+                method: result.method,
+                limit: result.limit,
+                originalWords: splitWords(text).length,
+                resultWords: splitWords(result.text).length
+            });
+        };
+
+        window.testWithAI = async function () {
+            const text = document.getElementById('testText').value;
+            const limit = parseInt(document.getElementById('wordLimit').value);
+
+            try {
+                const response = await mockGenerateQuietPrompt({
+                    quietPrompt: `Compress this text to exactly ${limit} words: ${text}`,
+                });
+
+                const parsed = JSON.parse(response);
+                const result = parsed.words.join(' ');
+
+                displayResult('AI Rewriting Test', {
+                    original: text,
+                    result: result,
+                    applied: true,
+                    method: 'ai',
+                    limit: limit,
+                    originalWords: splitWords(text).length,
+                    resultWords: splitWords(result).length
+                });
+            } catch (error) {
+                displayResult('AI Rewriting Test', {
+                    error: error.message,
+                    applied: false
+                });
+            }
+        };
+
+        window.testIntelligentSelection = async function () {
+            const text = document.getElementById('testText').value;
+            const limit = parseInt(document.getElementById('wordLimit').value);
+
+            const result = tryIntelligentWordSelection(text, limit);
+
+            displayResult('Intelligent Selection Test', {
+                original: text,
+                result: result || 'No result',
+                applied: !!result,
+                method: 'intelligent',
+                limit: limit,
+                originalWords: splitWords(text).length,
+                resultWords: result ? splitWords(result).length : 0
+            });
+        };
+
+        function displayResult(testName, data) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'test-section ' + (data.error ? 'error' : 'success');
+
+            let html = `<h4>${testName}</h4>`;
+            if (data.error) {
+                html += `<p><strong>Error:</strong> ${data.error}</p>`;
+            } else {
+                html += `
+                    <p><strong>Applied:</strong> ${data.applied}</p>
+                    <p><strong>Method:</strong> ${data.method || 'none'}</p>
+                    <p><strong>Original:</strong> ${data.original}</p>
+                    <p><strong>Result:</strong> ${data.result}</p>
+                    <p><strong>Word Count:</strong> ${data.originalWords} → ${data.resultWords} (target: ${data.limit})</p>
+                `;
+            }
+
+            resultDiv.innerHTML = html;
+            resultsDiv.appendChild(resultDiv);
+        }
+    </script>
+</body>
+
+</html>

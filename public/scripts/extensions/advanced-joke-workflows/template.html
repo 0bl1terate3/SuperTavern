@@ -1,0 +1,409 @@
+<div class="advanced_joke_workflows_settings">
+    <!-- Main Toggle -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>Advanced Joke Workflows</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="advancedJokeWorkflowsEnabled">
+                    <input type="checkbox" id="advancedJokeWorkflowsEnabled" checked>
+                    Enable Advanced Joke Workflows
+                </label>
+                <small>Master control for all advanced joke generation methods</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. Stepped Thinking with Topic Pools -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>1. Stepped Thinking with Topic Pools</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="steppedThinkingEnabled">
+                    <input type="checkbox" id="steppedThinkingEnabled" checked>
+                    Enable Stepped Thinking
+                </label>
+                <small>Force AI into two-phase generation: Topic Selection → Joke Construction</small>
+            </div>
+
+            <div class="form_group">
+                <label for="steppedThinkingAutoRotate">
+                    <input type="checkbox" id="steppedThinkingAutoRotate" checked>
+                    Auto-rotate Topic Pools
+                </label>
+                <small>Automatically rotate through different topic pools</small>
+            </div>
+
+            <div class="form_group">
+                <label>Topic Pools:</label>
+                <div class="checkbox_group">
+                    <label><input type="checkbox" name="topicPools" value="current_events" checked> Current
+                        Events</label>
+                    <label><input type="checkbox" name="topicPools" value="pop_culture" checked> Pop Culture</label>
+                    <label><input type="checkbox" name="topicPools" value="everyday_life" checked> Everyday Life</label>
+                    <label><input type="checkbox" name="topicPools" value="absurd_scenarios" checked> Absurd
+                        Scenarios</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Guided Generations with Role Segmentation -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>2. Guided Generations with Role Segmentation</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="guidedGenerationsEnabled">
+                    <input type="checkbox" id="guidedGenerationsEnabled" checked>
+                    Enable Guided Generations
+                </label>
+                <small>Split AI task into roles: Topic Selector → Comedian</small>
+            </div>
+
+            <div class="form_group">
+                <label for="guidedGenerationsRoleSegmentation">
+                    <input type="checkbox" id="guidedGenerationsRoleSegmentation" checked>
+                    Enable Role Segmentation
+                </label>
+                <small>Chain multiple modules where one output becomes the next input</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Objective-Driven Joke Variations -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>3. Objective-Driven Joke Variations</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="objectiveDrivenEnabled">
+                    <input type="checkbox" id="objectiveDrivenEnabled" checked>
+                    Enable Objective-Driven Variations
+                </label>
+                <small>Define rotating objectives like "Make a pun", "Tell a dark joke", etc.</small>
+            </div>
+
+            <div class="form_group">
+                <label for="objectiveDrivenAutoRotate">
+                    <input type="checkbox" id="objectiveDrivenAutoRotate" checked>
+                    Auto-rotate Objectives
+                </label>
+                <small>Automatically rotate through different joke objectives</small>
+            </div>
+
+            <div class="form_group">
+                <label>Joke Objectives:</label>
+                <div class="checkbox_group">
+                    <label><input type="checkbox" name="objectives" value="pun" checked> Pun</label>
+                    <label><input type="checkbox" name="objectives" value="dark" checked> Dark Humor</label>
+                    <label><input type="checkbox" name="objectives" value="dad" checked> Dad Joke</label>
+                    <label><input type="checkbox" name="objectives" value="pop_culture" checked> Pop Culture</label>
+                    <label><input type="checkbox" name="objectives" value="absurd" checked> Absurd</label>
+                    <label><input type="checkbox" name="objectives" value="wordplay" checked> Wordplay</label>
+                    <label><input type="checkbox" name="objectives" value="situational" checked> Situational</label>
+                    <label><input type="checkbox" name="objectives" value="parody" checked> Parody</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Memory-Integrated Humor -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>4. Memory-Integrated Humor</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="memoryIntegrationEnabled">
+                    <input type="checkbox" id="memoryIntegrationEnabled" checked>
+                    Enable Memory Integration
+                </label>
+                <small>Harvest topics from chat memory and summaries instead of random selection</small>
+            </div>
+
+            <div class="form_group">
+                <label for="memoryIntegrationUseChatSummaries">
+                    <input type="checkbox" id="memoryIntegrationUseChatSummaries" checked>
+                    Use Chat Summaries
+                </label>
+                <small>Extract topics from recent chat conversations</small>
+            </div>
+
+            <div class="form_group">
+                <label for="memoryIntegrationUseLorebook">
+                    <input type="checkbox" id="memoryIntegrationUseLorebook" checked>
+                    Use Lorebook
+                </label>
+                <small>Extract topics from character lorebook and world info</small>
+            </div>
+
+            <div class="form_group">
+                <label for="memoryIntegrationMaxTopics">Max Topics to Remember:</label>
+                <input type="number" id="memoryIntegrationMaxTopics" value="10" min="1" max="50">
+                <small>Maximum number of topics to keep in memory</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Topic Roulette with SwipeModelRoulette -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>5. Topic Roulette with SwipeModelRoulette</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="topicRouletteEnabled">
+                    <input type="checkbox" id="topicRouletteEnabled" checked>
+                    Enable Topic Roulette
+                </label>
+                <small>Rotate topic pools instead of models on swipe</small>
+            </div>
+
+            <div class="form_group">
+                <label for="topicRouletteSwipeToRotate">
+                    <input type="checkbox" id="topicRouletteSwipeToRotate" checked>
+                    Swipe to Rotate Topics
+                </label>
+                <small>Every swipe selects a new joke topic automatically</small>
+            </div>
+
+            <div class="form_group">
+                <label>Roulette Pools:</label>
+                <div class="checkbox_group">
+                    <label><input type="checkbox" name="roulettePools" value="everyday_life" checked> Everyday
+                        Life</label>
+                    <label><input type="checkbox" name="roulettePools" value="pop_culture" checked> Pop Culture</label>
+                    <label><input type="checkbox" name="roulettePools" value="current_events" checked> Current
+                        Events</label>
+                    <label><input type="checkbox" name="roulettePools" value="absurd_scenarios" checked> Absurd
+                        Scenarios</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. Joke Scaffolding via Prompt Inspector -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>6. Joke Scaffolding via Prompt Inspector</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="jokeScaffoldingEnabled">
+                    <input type="checkbox" id="jokeScaffoldingEnabled" checked>
+                    Enable Joke Scaffolding
+                </label>
+                <small>Enforce scaffolding: Pick topic → Pick structure → Write joke</small>
+            </div>
+
+            <div class="form_group">
+                <label for="jokeScaffoldingEnforceStructure">
+                    <input type="checkbox" id="jokeScaffoldingEnforceStructure" checked>
+                    Enforce Structure
+                </label>
+                <small>Force specific joke structures (one-liner, setup-punchline, etc.)</small>
+            </div>
+
+            <div class="form_group">
+                <label>Joke Structures:</label>
+                <div class="checkbox_group">
+                    <label><input type="checkbox" name="structures" value="one_liner" checked> One-liner</label>
+                    <label><input type="checkbox" name="structures" value="setup_punchline" checked>
+                        Setup-Punchline</label>
+                    <label><input type="checkbox" name="structures" value="parody" checked> Parody</label>
+                    <label><input type="checkbox" name="structures" value="dialogue" checked> Dialogue</label>
+                    <label><input type="checkbox" name="structures" value="absurdism" checked> Absurdism</label>
+                    <label><input type="checkbox" name="structures" value="wordplay" checked> Wordplay</label>
+                    <label><input type="checkbox" name="structures" value="dark_humor" checked> Dark Humor</label>
+                    <label><input type="checkbox" name="structures" value="dad_joke" checked> Dad Joke</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>Quick Actions</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <button id="testAdvancedJoke" class="menu_button">
+                    <i class="fa-solid fa-play"></i> Test Advanced Joke Generation
+                </button>
+                <button id="clearMemoryTopics" class="menu_button">
+                    <i class="fa-solid fa-trash"></i> Clear Memory Topics
+                </button>
+                <button id="rotateTopicPool" class="menu_button">
+                    <i class="fa-solid fa-sync"></i> Rotate Topic Pool
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .advanced_joke_workflows_settings {
+        padding: 10px;
+    }
+
+    .checkbox_group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 5px;
+        margin-top: 5px;
+    }
+
+    .checkbox_group label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+    }
+
+    .form_group {
+        margin-bottom: 15px;
+    }
+
+    .form_group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form_group small {
+        display: block;
+        color: #666;
+        font-size: 11px;
+        margin-top: 2px;
+    }
+
+    .form_group input[type="number"] {
+        width: 60px;
+    }
+
+    #testAdvancedJoke,
+    #clearMemoryTopics,
+    #rotateTopicPool {
+        margin: 5px;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #f5f5f5;
+        cursor: pointer;
+    }
+
+    #testAdvancedJoke:hover,
+    #clearMemoryTopics:hover,
+    #rotateTopicPool:hover {
+        background: #e5e5e5;
+    }
+</style>
+
+<script>
+    // Load current settings into the form
+    document.addEventListener('DOMContentLoaded', function () {
+        const settings = extension_settings.advancedJokeWorkflows;
+
+        // Main toggle
+        document.getElementById('advancedJokeWorkflowsEnabled').checked = settings.enabled;
+
+        // Stepped Thinking
+        document.getElementById('steppedThinkingEnabled').checked = settings.steppedThinking.enabled;
+        document.getElementById('steppedThinkingAutoRotate').checked = settings.steppedThinking.autoRotate;
+
+        // Set topic pool checkboxes
+        settings.steppedThinking.topicPools.forEach(pool => {
+            const checkbox = document.querySelector(`input[name="topicPools"][value="${pool}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+
+        // Guided Generations
+        document.getElementById('guidedGenerationsEnabled').checked = settings.guidedGenerations.enabled;
+        document.getElementById('guidedGenerationsRoleSegmentation').checked = settings.guidedGenerations.roleSegmentation;
+
+        // Objective Driven
+        document.getElementById('objectiveDrivenEnabled').checked = settings.objectiveDriven.enabled;
+        document.getElementById('objectiveDrivenAutoRotate').checked = settings.objectiveDriven.autoRotate;
+
+        // Set objective checkboxes
+        settings.objectiveDriven.objectives.forEach(objective => {
+            const checkbox = document.querySelector(`input[name="objectives"][value="${objective}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+
+        // Memory Integration
+        document.getElementById('memoryIntegrationEnabled').checked = settings.memoryIntegration.enabled;
+        document.getElementById('memoryIntegrationUseChatSummaries').checked = settings.memoryIntegration.useChatSummaries;
+        document.getElementById('memoryIntegrationUseLorebook').checked = settings.memoryIntegration.useLorebook;
+        document.getElementById('memoryIntegrationMaxTopics').value = settings.memoryIntegration.maxTopics;
+
+        // Topic Roulette
+        document.getElementById('topicRouletteEnabled').checked = settings.topicRoulette.enabled;
+        document.getElementById('topicRouletteSwipeToRotate').checked = settings.topicRoulette.swipeToRotate;
+
+        // Set roulette pool checkboxes
+        settings.topicRoulette.pools.forEach(pool => {
+            const checkbox = document.querySelector(`input[name="roulettePools"][value="${pool}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+
+        // Joke Scaffolding
+        document.getElementById('jokeScaffoldingEnabled').checked = settings.jokeScaffolding.enabled;
+        document.getElementById('jokeScaffoldingEnforceStructure').checked = settings.jokeScaffolding.enforceStructure;
+
+        // Set structure checkboxes
+        settings.jokeScaffolding.structures.forEach(structure => {
+            const checkbox = document.querySelector(`input[name="structures"][value="${structure}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+
+        // Quick action buttons
+        document.getElementById('testAdvancedJoke').addEventListener('click', async function () {
+            try {
+                const { generateAdvancedJoke } = await import('/scripts/advanced-joke-workflows.js');
+                const joke = await generateAdvancedJoke('Test context', 'auto');
+                toastr.success(`Generated joke: ${joke}`);
+            } catch (error) {
+                console.error('Error testing advanced joke:', error);
+                toastr.error('Failed to generate test joke');
+            }
+        });
+
+        document.getElementById('clearMemoryTopics').addEventListener('click', async function () {
+            try {
+                const { clearMemoryTopics } = await import('/scripts/advanced-joke-workflows.js');
+                clearMemoryTopics();
+                toastr.success('Memory topics cleared!');
+            } catch (error) {
+                console.error('Error clearing memory topics:', error);
+                toastr.error('Failed to clear memory topics');
+            }
+        });
+
+        document.getElementById('rotateTopicPool').addEventListener('click', async function () {
+            try {
+                const { rotateTopicPool } = await import('/scripts/advanced-joke-workflows.js');
+                rotateTopicPool();
+                toastr.success('Topic pool rotated!');
+            } catch (error) {
+                console.error('Error rotating topic pool:', error);
+                toastr.error('Failed to rotate topic pool');
+            }
+        });
+    });
+</script>

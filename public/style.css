@@ -7486,3 +7486,102 @@ input[data-supertavern-setting="jokeGenerator.enabled"]:checked + [data-supertav
         padding: 15px;
     }
 }
+
+/* Word Limit UI Styling */
+#word_limit_controls {
+    transition: all 0.3s ease;
+}
+
+#word_limit_controls .flex-container {
+    margin-bottom: 10px;
+}
+
+#word_limit_controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+
+#word_limit_controls label small {
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.8;
+    font-size: 0.85em;
+}
+
+#word_limit_controls input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    background: var(--SmartThemeBodyColor);
+    color: var(--SmartThemeBodyText);
+}
+
+#word_limit_controls input[type="checkbox"] {
+    margin-right: 8px;
+    transform: scale(1.1);
+}
+
+#word_limit_controls select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    background: var(--SmartThemeBodyColor);
+    color: var(--SmartThemeBodyText);
+}
+
+#word_limit_controls textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    background: var(--SmartThemeBodyColor);
+    color: var(--SmartThemeBodyText);
+    resize: vertical;
+    min-height: 60px;
+}
+
+#word_limit_controls .checkbox_label {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin-bottom: 0;
+}
+
+#word_limit_controls .checkbox_label small {
+    margin-left: 8px;
+    font-weight: 500;
+}
+
+/* Word limit status indicator */
+.word-limit-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.word-limit-status.enabled {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.word-limit-status.disabled {
+    background: rgba(158, 158, 158, 0.2);
+    color: #9E9E9E;
+}
+
+/* Responsive adjustments for word limit controls */
+@media (max-width: 768px) {
+    #word_limit_controls .flex-container.flexnowrap {
+        flex-direction: column;
+    }
+    
+    #word_limit_controls .flex1 {
+        margin-bottom: 10px;
+    }
+}

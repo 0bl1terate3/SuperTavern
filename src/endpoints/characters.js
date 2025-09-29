@@ -609,8 +609,6 @@ function charaFormatData(data, directories) {
     _.set(char, 'data.extensions.fav', data.fav == 'true');
     _.set(char, 'data.extensions.world', data.world || '');
 
-    // Generation settings fields
-    _.set(char, 'data.generation_bias', data.generation_bias || '');
     _.set(char, 'data.response_style', data.response_style || 'balanced');
     _.set(char, 'data.generation_temperature', data.generation_temperature || 0.7);
     // Personality traits

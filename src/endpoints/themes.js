@@ -8,14 +8,19 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 export const router = express.Router();
 
 router.post('/save', (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
+    try {
+        if (!request.body || !request.body.name) {
+            return response.status(400).json({ error: 'Theme name is required' });
+        }
+
+        const filename = path.join(request.user.directories.themes, sanitize(`${request.body.name}.json`));
+        writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+
+        return response.json({ success: true, name: request.body.name });
+    } catch (error) {
+        console.error('Error saving theme:', error);
+        return response.status(500).json({ error: 'Failed to save theme' });
     }
-
-    const filename = path.join(request.user.directories.themes, sanitize(`${request.body.name}.json`));
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
 });
 
 router.post('/delete', (request, response) => {

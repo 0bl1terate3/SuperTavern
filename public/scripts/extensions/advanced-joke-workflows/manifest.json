@@ -1,0 +1,24 @@
+{
+    "name": "advanced-joke-workflows",
+    "display_name": "Advanced Joke Workflows",
+    "version": "1.0.0",
+    "description": "Advanced methods for Topic → Joke workflows with 6 sophisticated generation techniques",
+    "author": "SuperTavern",
+    "author_email": "",
+    "author_url": "",
+    "homepage": "",
+    "license": "MIT",
+    "minimum_client_version": "1.12.1",
+    "tags": [
+        "jokes",
+        "humor",
+        "workflows",
+        "advanced",
+        "ai"
+    ],
+    "requires": [],
+    "dependencies": [],
+    "order": 0,
+    "icon": "🎭",
+    "category": "entertainment"
+}

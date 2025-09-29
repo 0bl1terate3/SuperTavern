@@ -12,6 +12,7 @@ import {
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
+import { applyWordLimitIfNeeded, clearActiveWordLimit, getActiveWordLimit, setActiveWordLimit, getCharacterWordLimitSettings, applyCharacterWordLimit } from './scripts/word-limit.js';
 import {
     voiceAudioController,
     initializeVoiceAudio,
@@ -45,6 +46,10 @@ import { searchDiscoveryController } from './scripts/search-discovery-controller
 import { initializeSearchDiscoveryInterface } from './scripts/search-discovery-interface.js';
 import { audioStudioController } from './scripts/audio-studio-controller.js';
 import { initializeAudioStudioInterface } from './scripts/audio-studio-interface.js';
+import { conversationBranchesController } from './scripts/conversation-branches-controller.js';
+import { advancedFeaturesController } from './scripts/advanced-features-controller.js';
+import { characterRelationshipsController } from './scripts/character-relationships-controller.js';
+import { initializeAdvancedFeaturesIntegration } from './scripts/advanced-features-integration.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -334,6 +339,9 @@ globalThis.SuperTavern = {
     getContext,
 };
 
+// Compatibility alias for extensions that still use SillyTavern
+globalThis.SillyTavern = globalThis.SuperTavern;
+
 export {
     user_avatar,
     setUserAvatar,
@@ -569,9 +577,6 @@ export let menu_type = '';
 
 export let selected_button = ''; //which button pressed
 
-// Global variable for generation bias display
-/** @type {string|null} */
-window.currentGenerationBias = null;
 
 //create pole save
 export let create_save = {
@@ -597,8 +602,6 @@ export let create_save = {
     depth_prompt_role: depth_prompt_role_default,
     extensions: {},
     extra_books: [],
-    // New generation settings
-    generation_bias: '',
     response_style: 'default',
     generation_temperature: 0.7,
     // Personality traits
@@ -791,31 +794,38 @@ async function firstLoadInit() {
     initializeVoiceAudioInterface();
     await automationController.initialize();
     initializeAutomationInterface();
-        await aiEnhancementController.initialize();
-        initializeAIEnhancementInterface();
+    await aiEnhancementController.initialize();
+    initializeAIEnhancementInterface();
 
-        // Initialize Developer Tools
-        await developerToolsController.initialize();
-        initializeDeveloperToolsInterface();
+    // Initialize Developer Tools
+    await developerToolsController.initialize();
+    initializeDeveloperToolsInterface();
 
-        // Initialize Analytics Dashboard
-        await analyticsDashboardController.initialize();
-        initializeAnalyticsDashboardInterface();
+    // Initialize Analytics Dashboard
+    await analyticsDashboardController.initialize();
+    initializeAnalyticsDashboardInterface();
 
-        // Initialize Text Utilities
-        await textUtilitiesController.initialize();
-        initializeTextUtilitiesInterface();
+    // Initialize Text Utilities
+    await textUtilitiesController.initialize();
+    initializeTextUtilitiesInterface();
 
-        // Initialize Visual Effects Studio
-        await visualEffectsController.initialize();
-        initializeVisualEffectsInterface();
+    // Initialize Visual Effects Studio
+    await visualEffectsController.initialize();
+    initializeVisualEffectsInterface();
 
-        // Initialize Search & Discovery Hub
-        await searchDiscoveryController.initialize();
-        initializeSearchDiscoveryInterface();
+    // Initialize Search & Discovery Hub
+    await searchDiscoveryController.initialize();
+    initializeSearchDiscoveryInterface();
 
-        await audioStudioController.initialize();
-        initializeAudioStudioInterface();
+    await audioStudioController.initialize();
+    initializeAudioStudioInterface();
+    
+    // Initialize new advanced features
+    await conversationBranchesController.initialize();
+    await advancedFeaturesController.initialize();
+    await characterRelationshipsController.initialize();
+    initializeAdvancedFeaturesIntegration();
+    
     initCfg();
     initLogprobs();
     initInputMarkdown();
@@ -2004,120 +2014,15 @@ export function updateMessageBlock(messageId, message, { rerenderMessage = true 
 
     updateReasoningUI(messageElement);
 
-    // Add generation bias display for non-streaming messages
-    if (window.currentGenerationBias && !message.is_user && !message.is_system) {
-        addGenerationBiasDisplayToMessage(messageElement);
-    }
 
     addCopyToCodeBlocks(messageElement);
     appendMediaToMessage(message, messageElement);
     applyTopicBadge(messageElement, message?.extra?.aiTopics);
 }
 
-/**
- * Refreshes all existing generation bias displays with the current bias
- */
-function refreshGenerationBiasDisplay() {
-    if (!window.currentGenerationBias) {
-        return;
-    }
 
-    // Update all existing bias displays
-    $('.generation-bias-display').each(function() {
-        const biasDisplay = $(this);
-        biasDisplay.html(`<strong>🎭 Generation Bias:</strong> ${window.currentGenerationBias}`);
-    });
-}
 
-/**
- * Updates the generation bias display when character settings change
- * This should be called whenever personality traits or other generation settings are modified
- */
-export function updateGenerationBiasFromCurrentCharacter() {
-    if (!this_chid || !characters[this_chid]) {
-        return;
-    }
 
-    const character = characters[this_chid];
-    const generationBias = getCharacterGenerationBias(character, chat.slice(-3).map(m => m.mes).join(' '));
-
-    if (generationBias) {
-        window.currentGenerationBias = generationBias;
-        refreshGenerationBiasDisplay();
-        console.log('[Generation Bias] Updated from character settings:', generationBias);
-    } else {
-        window.currentGenerationBias = null;
-        $('.generation-bias-display').remove();
-    }
-}
-
-/**
- * Sets up event listeners for generation bias sliders and inputs
- */
-function setupGenerationBiasListeners() {
-    // Remove existing listeners to avoid duplicates
-    $('#sarcasm_level, #empathy_level, #aggressiveness, #creativity_level, #memory_persistence, #response_length, #question_tendency, #key_memories, #dialogue_rules, #relationship_status').off('input change');
-
-    // Add listeners for all personality trait sliders and inputs
-    $('#sarcasm_level, #empathy_level, #aggressiveness, #creativity_level, #memory_persistence, #response_length, #question_tendency').on('input change', function() {
-        // Update the character data immediately
-        if (this_chid && characters[this_chid]) {
-            const fieldName = this.id;
-            characters[this_chid].data[fieldName] = parseInt($(this).val());
-        }
-        // Update generation bias display
-        updateGenerationBiasFromCurrentCharacter();
-    });
-
-    // Add listeners for text inputs
-    $('#key_memories, #dialogue_rules').on('input change', function() {
-        if (this_chid && characters[this_chid]) {
-            const fieldName = this.id;
-            characters[this_chid].data[fieldName] = $(this).val();
-        }
-        updateGenerationBiasFromCurrentCharacter();
-    });
-
-    // Add listener for relationship status dropdown
-    $('#relationship_status').on('change', function() {
-        if (this_chid && characters[this_chid]) {
-            characters[this_chid].data.relationship_status = $(this).val();
-        }
-        updateGenerationBiasFromCurrentCharacter();
-    });
-}
-
-/**
- * Adds generation bias display to a message element
- * @param {JQuery<HTMLElement>} messageElement Message element
- */
-function addGenerationBiasDisplayToMessage(messageElement) {
-    if (!window.currentGenerationBias || messageElement.find('.generation-bias-display').length > 0) {
-        return;
-    }
-
-    // Create the bias display element
-    const biasDisplay = document.createElement('div');
-    biasDisplay.className = 'generation-bias-display';
-    biasDisplay.style.cssText = `
-        color: #ffd700;
-        font-style: italic;
-        font-size: 0.9em;
-        margin-top: 8px;
-        padding: 4px 8px;
-        background: rgba(255, 215, 0, 0.1);
-        border-left: 3px solid #ffd700;
-        border-radius: 4px;
-        opacity: 0.8;
-    `;
-    biasDisplay.innerHTML = `<strong>🎭 Generation Bias:</strong> ${window.currentGenerationBias}`;
-
-    // Insert after the message text
-    const messageText = messageElement.find('.mes_text');
-    if (messageText.length > 0) {
-        messageText.after(biasDisplay);
-    }
-}
 
 /**
  * Appends image or file to the message element.
@@ -2927,212 +2832,6 @@ export function baseChatReplace(value, name1, name2) {
 }
 
 /**
- * Selects a topic from the character's topic list based on the selection mode.
- * @param {object} character - The character object
- * @param {string} [context] - Optional context for contextual selection
- * @returns {string} Selected topic or empty string
- */
-
-
-
-
-/**
- * Gets the generation bias text for a character, including selected topic.
- * @param {object} character - The character object
- * @param {string} [context] - Optional context for topic selection
- * @returns {string} Generation bias text
- */
-/**
- * Gets the generation bias text for a character, including the selected topic.
- * This is a simplified and more robust version.
- * @param {object} character - The character object
- * @param {string} [context] - Optional context for topic selection
- * @returns {string} Generation bias text
- */
-export function getCharacterGenerationBias(character, context = '') {
-    if (!character?.data) {
-        return '';
-    }
-
-    let biasText = '';
-
-    // 1. Add the user-defined generation bias first
-    if (character.data.generation_bias) {
-        biasText += character.data.generation_bias;
-    }
-
-    // 2. Add personality traits
-    const personalityTraits = [];
-
-    // Sarcasm level
-    const sarcasmLevel = character.data.sarcasm_level || 5;
-    if (sarcasmLevel >= 8) {
-        personalityTraits.push('highly sarcastic');
-    } else if (sarcasmLevel >= 6) {
-        personalityTraits.push('moderately sarcastic');
-    } else if (sarcasmLevel >= 4) {
-        personalityTraits.push('occasionally sarcastic');
-    } else if (sarcasmLevel >= 2) {
-        personalityTraits.push('rarely sarcastic');
-    } else {
-        personalityTraits.push('never sarcastic');
-    }
-
-    // Empathy level
-    const empathyLevel = character.data.empathy_level || 5;
-    if (empathyLevel >= 8) {
-        personalityTraits.push('highly empathetic and caring');
-    } else if (empathyLevel >= 6) {
-        personalityTraits.push('moderately empathetic');
-    } else if (empathyLevel >= 4) {
-        personalityTraits.push('somewhat empathetic');
-    } else if (empathyLevel >= 2) {
-        personalityTraits.push('minimally empathetic');
-    } else {
-        personalityTraits.push('cold and indifferent');
-    }
-
-    // Aggressiveness
-    const aggressiveness = character.data.aggressiveness || 5;
-    if (aggressiveness >= 8) {
-        personalityTraits.push('highly confrontational and aggressive');
-    } else if (aggressiveness >= 6) {
-        personalityTraits.push('moderately aggressive');
-    } else if (aggressiveness >= 4) {
-        personalityTraits.push('somewhat confrontational');
-    } else if (aggressiveness >= 2) {
-        personalityTraits.push('mildly assertive');
-    } else {
-        personalityTraits.push('passive and non-confrontational');
-    }
-
-    // Creativity level
-    const creativityLevel = character.data.creativity_level || 5;
-    if (creativityLevel >= 8) {
-        personalityTraits.push('highly creative and surreal');
-    } else if (creativityLevel >= 6) {
-        personalityTraits.push('moderately creative');
-    } else if (creativityLevel >= 4) {
-        personalityTraits.push('somewhat creative');
-    } else if (creativityLevel >= 2) {
-        personalityTraits.push('minimally creative');
-    } else {
-        personalityTraits.push('literal and straightforward');
-    }
-
-    if (personalityTraits.length > 0) {
-        biasText += ` [Personality: ${personalityTraits.join(', ')}]`;
-    }
-
-    // 3. Add memory and context instructions
-    if (character.data.key_memories) {
-        const memories = character.data.key_memories.split('\n').filter(m => m.trim());
-        if (memories.length > 0) {
-            biasText += ` [Key memories to always remember: ${memories.join(', ')}]`;
-        }
-    }
-
-    // Memory persistence
-    const memoryPersistence = character.data.memory_persistence || 5;
-    if (memoryPersistence >= 8) {
-        biasText += ' [Reference past conversations very frequently]';
-    } else if (memoryPersistence >= 6) {
-        biasText += ' [Reference past conversations frequently]';
-    } else if (memoryPersistence >= 4) {
-        biasText += ' [Occasionally reference past conversations]';
-    } else if (memoryPersistence >= 2) {
-        biasText += ' [Rarely reference past conversations]';
-    } else {
-        biasText += ' [Focus on current conversation, never reference past]';
-    }
-
-    // Relationship status
-    const relationshipStatus = character.data.relationship_status || 'neutral';
-    const relationshipPrompts = {
-        'friendly': '[treat the user as a close friend]',
-        'adversarial': '[treat the user as an opponent or rival]',
-        'mentor': '[act as a wise mentor to the user]',
-        'romantic': '[treat the user with romantic interest]',
-        'rival': '[treat the user as a competitive rival]',
-        'protective': '[act protectively toward the user]'
-    };
-
-    if (relationshipPrompts[relationshipStatus]) {
-        biasText += ' ' + relationshipPrompts[relationshipStatus];
-    }
-
-    // 4. Add response control instructions
-    const responseLength = character.data.response_length || 5;
-    if (responseLength >= 8) {
-        biasText += ' [Provide very detailed, verbose responses]';
-    } else if (responseLength >= 6) {
-        biasText += ' [Provide detailed, verbose responses]';
-    } else if (responseLength >= 4) {
-        biasText += ' [Provide moderately detailed responses]';
-    } else if (responseLength >= 2) {
-        biasText += ' [Keep responses concise]';
-    } else {
-        biasText += ' [Keep responses very short and concise]';
-    }
-
-    const questionTendency = character.data.question_tendency || 5;
-    if (questionTendency >= 8) {
-        biasText += ' [Ask questions very frequently]';
-    } else if (questionTendency >= 6) {
-        biasText += ' [Ask questions frequently]';
-    } else if (questionTendency >= 4) {
-        biasText += ' [Ask questions occasionally]';
-    } else if (questionTendency >= 2) {
-        biasText += ' [Rarely ask questions]';
-    } else {
-        biasText += ' [Never ask questions]';
-    }
-
-    // Dialogue rules
-    if (character.data.dialogue_rules) {
-        const rules = character.data.dialogue_rules.split('\n').filter(r => r.trim());
-        if (rules.length > 0) {
-            biasText += ` [Dialogue rules: ${rules.join(', ')}]`;
-        }
-    }
-
-    // 5. Add response style influence
-    const responseStyle = character.data.response_style || 'default';
-    if (responseStyle !== 'default') {
-        const stylePrompts = {
-            'formal': '[respond in a formal professional manner]',
-            'casual': '[respond in a casual friendly manner]',
-            'playful': '[respond in a playful humorous manner]',
-            'mysterious': '[respond in a mysterious enigmatic manner]',
-            'aggressive': '[respond in an aggressive confrontational manner]',
-            'romantic': '[respond in a romantic affectionate manner]',
-            'professional': '[respond in a professional business-like manner]'
-        };
-
-        if (stylePrompts[responseStyle]) {
-            biasText += ' ' + stylePrompts[responseStyle];
-        }
-    }
-
-    const finalBias = biasText.trim();
-    if (finalBias) {
-        console.log('[DEBUG] Final generation bias:', finalBias);
-    }
-    return finalBias;
-}
-
-
-/**
- * Creates natural topic integration based on character style
- * @param {string} topic - The selected topic
- * @param {string} style - The character's style
- * @param {number} influenceStrength - How strong the influence should be
- * @returns {string} Natural topic integration text
- */
-
-
-
-/**
  * Returns the character card fields for the current character.
  * @param {object} [options]
  * @param {number} [options.chid] Optional character index
@@ -3186,23 +2885,6 @@ export function getCharacterCardFields({ chid = null } = {}) {
     result.charDepthPrompt = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2);
     result.creatorNotes = baseChatReplace(character.data?.creator_notes?.trim(), name1, name2);
 
-    // *** MODIFICATION START ***
-    // Add generation bias to the jailbreak/post-history prompt for recency.
-    if (character.data) {
-        const generationBias = getCharacterGenerationBias(character, chat.slice(-3).map(m => m.mes).join(' '));
-        if (generationBias) {
-            // This injects the topic instruction LATER in the context, making it more impactful.
-            result.jailbreak += (result.jailbreak ? '\n\n' : '') + generationBias;
-            console.log('[Generation Bias] Applied to post-history instructions:', generationBias);
-
-            // Store generation bias globally for UI display
-            window.currentGenerationBias = generationBias;
-
-            // Force refresh of any existing bias displays
-            refreshGenerationBiasDisplay();
-        }
-    }
-    // *** MODIFICATION END ***
 
     if (selected_group) {
         const groupCards = getGroupCharacterCards(selected_group, Number(currentChid));
@@ -3448,10 +3130,6 @@ class StreamingProcessor {
             if (this.messageTextDom instanceof HTMLElement) {
                 this.messageTextDom.innerHTML = formattedText;
 
-                // Add generation bias display if available
-                if (window.currentGenerationBias && !this.biasDisplayAdded) {
-                    this.addGenerationBiasDisplay();
-                }
             }
 
             const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount, this.reasoningHandler.getDuration(), this.timeToFirstToken);
@@ -3473,8 +3151,6 @@ class StreamingProcessor {
         await this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
 
-        // Clear the generation bias after generation is complete
-        window.currentGenerationBias = null;
 
         // Auto-speak AI responses when streaming is finished
         if (typeof window !== 'undefined' && window.voiceAudioController) {
@@ -3632,36 +3308,6 @@ class StreamingProcessor {
         return this.result;
     }
 
-    /**
-     * Adds a yellow italic display showing the generation bias being applied
-     */
-    addGenerationBiasDisplay() {
-        if (!window.currentGenerationBias || this.biasDisplayAdded) {
-            return;
-        }
-
-        // Create the bias display element
-        const biasDisplay = document.createElement('div');
-        biasDisplay.className = 'generation-bias-display';
-        biasDisplay.style.cssText = `
-            color: #ffd700;
-            font-style: italic;
-            font-size: 0.9em;
-            margin-top: 8px;
-            padding: 4px 8px;
-            background: rgba(255, 215, 0, 0.1);
-            border-left: 3px solid #ffd700;
-            border-radius: 4px;
-            opacity: 0.8;
-        `;
-        biasDisplay.innerHTML = `<strong>🎭 Generation Bias:</strong> ${window.currentGenerationBias}`;
-
-        // Insert after the message text
-        if (this.messageTextDom && this.messageTextDom.parentNode) {
-            this.messageTextDom.parentNode.insertBefore(biasDisplay, this.messageTextDom.nextSibling);
-            this.biasDisplayAdded = true;
-        }
-    }
 }
 
 /**
@@ -5250,6 +4896,31 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             displayIncompleteSentences: displayIncomplete,
         });
 
+        let wordLimitInfo = null;
+        if (!isImpersonate && type !== 'quiet') {
+            try {
+                // First try character-specific word limit settings
+                const characterSettings = getCharacterWordLimitSettings();
+                if (characterSettings && characterSettings.enabled) {
+                    const processedMessage = applyCharacterWordLimit(getMessage);
+                    if (processedMessage !== getMessage) {
+                        getMessage = processedMessage;
+                        messageChunk = processedMessage;
+                        wordLimitInfo = { applied: true, method: 'character_settings' };
+                    }
+                } else {
+                    // Fall back to global word limit settings
+                    wordLimitInfo = await applyWordLimitIfNeeded(getMessage);
+                    if (wordLimitInfo?.applied && typeof wordLimitInfo.text === 'string') {
+                        getMessage = wordLimitInfo.text;
+                        messageChunk = wordLimitInfo.text;
+                    }
+                }
+            } catch (error) {
+                console.warn('Word limit enforcement failed', error);
+            }
+        }
+
         if (isImpersonate) {
             $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
@@ -5267,6 +4938,18 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             }
             else {
                 ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrl }));
+            }
+
+            if (wordLimitInfo?.applied && chat.length) {
+                const lastMessage = chat[chat.length - 1];
+                if (lastMessage?.extra && typeof lastMessage.extra === 'object') {
+                    lastMessage.extra.word_limit = {
+                        limit: wordLimitInfo.limit,
+                        method: wordLimitInfo.method,
+                        attempts: wordLimitInfo.attempts,
+                        fallback: Boolean(wordLimitInfo.fallback),
+                    };
+                }
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -8222,8 +7905,6 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#dialogue_rules').val(characters[chid].data?.dialogue_rules || '');
     $('#relationship_status').val(characters[chid].data?.relationship_status || 'neutral');
 
-    // Add event listeners for real-time generation bias updates
-    setupGenerationBiasListeners();
     $('#personality_textarea').val(characters[chid].personality);
     $('#firstmessage_textarea').val(characters[chid].first_mes);
     $('#scenario_pole').val(characters[chid].scenario);
@@ -8233,7 +7914,6 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#talkativeness_slider').val(characters[chid].talkativeness || talkativeness_default);
     $('#mes_example_textarea').val(characters[chid].mes_example);
     // New generation settings
-    $('#generation_bias_textarea').val(characters[chid].data?.generation_bias || '');
     $('#response_style_select').val(characters[chid].data?.response_style || 'balanced');
     $('#generation_temperature').val(characters[chid].data?.generation_temperature || 0.7);
     // Personality traits
@@ -8249,6 +7929,16 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     $('#response_length').val(characters[chid].data?.response_length || 5);
     $('#question_tendency').val(characters[chid].data?.question_tendency || 5);
     $('#dialogue_rules_textarea').val(characters[chid].data?.dialogue_rules || '');
+    // Word limit settings
+    $('#word_limit_enabled').prop('checked', characters[chid].data?.word_limit_enabled || false);
+    $('#word_limit_min').val(characters[chid].data?.word_limit_min || 10);
+    $('#word_limit_max').val(characters[chid].data?.word_limit_max || 100);
+    $('#word_limit_strict_mode').prop('checked', characters[chid].data?.word_limit_strict_mode || false);
+    $('#word_limit_auto_trim').prop('checked', characters[chid].data?.word_limit_auto_trim !== false);
+    $('#word_limit_style').val(characters[chid].data?.word_limit_style || 'natural');
+    $('#word_limit_instructions').val(characters[chid].data?.word_limit_instructions || '');
+    // Trigger change to show/hide controls
+    $('#word_limit_enabled').trigger('change');
     $('#selected_chat_pole').val(characters[chid].chat);
     $('#create_date_pole').val(characters[chid].create_date);
     $('#avatar_url_pole').val(characters[chid].avatar);
@@ -8328,6 +8018,16 @@ function select_rm_create({ switchMenu = true } = {}) {
     $('#depth_prompt_depth').val(create_save.depth_prompt_depth);
     $('#depth_prompt_role').val(create_save.depth_prompt_role);
     $('#mes_example_textarea').val(create_save.mes_example);
+    // Word limit settings
+    $('#word_limit_enabled').prop('checked', create_save.word_limit_enabled || false);
+    $('#word_limit_min').val(create_save.word_limit_min || 10);
+    $('#word_limit_max').val(create_save.word_limit_max || 100);
+    $('#word_limit_strict_mode').prop('checked', create_save.word_limit_strict_mode || false);
+    $('#word_limit_auto_trim').prop('checked', create_save.word_limit_auto_trim !== false);
+    $('#word_limit_style').val(create_save.word_limit_style || 'natural');
+    $('#word_limit_instructions').val(create_save.word_limit_instructions || '');
+    // Trigger change to show/hide controls
+    $('#word_limit_enabled').trigger('change');
     $('#character_json_data').val('');
     $('#avatar_div').css('display', 'flex');
     $('#avatar_load_preview').attr('src', default_avatar);
@@ -9052,7 +8752,6 @@ async function createOrEditCharacter(e) {
                 { id: '#mes_example_textarea', callback: value => create_save.mes_example = value },
                 { id: '#character_json_data', callback: () => { } },
                 // New generation settings fields
-                { id: '#generation_bias_textarea', callback: value => create_save.generation_bias = value },
                 { id: '#response_style_select', callback: value => create_save.response_style = value },
                 { id: '#generation_temperature', callback: value => create_save.generation_temperature = parseFloat(value) },
                 // Personality traits
@@ -9071,6 +8770,14 @@ async function createOrEditCharacter(e) {
                 { id: '#alternate_greetings_template', callback: value => create_save.alternate_greetings = value, defaultValue: [] },
                 { id: '#character_world', callback: value => create_save.world = value },
                 { id: '#_character_extensions_fake', callback: value => create_save.extensions = {} },
+                // Word limit settings
+                { id: '#word_limit_enabled', callback: value => create_save.word_limit_enabled = value },
+                { id: '#word_limit_min', callback: value => create_save.word_limit_min = parseInt(value) || 10 },
+                { id: '#word_limit_max', callback: value => create_save.word_limit_max = parseInt(value) || 100 },
+                { id: '#word_limit_strict_mode', callback: value => create_save.word_limit_strict_mode = value },
+                { id: '#word_limit_auto_trim', callback: value => create_save.word_limit_auto_trim = value },
+                { id: '#word_limit_style', callback: value => create_save.word_limit_style = value },
+                { id: '#word_limit_instructions', callback: value => create_save.word_limit_instructions = value },
             ];
 
             fields.forEach(field => {
@@ -10133,6 +9840,28 @@ jQuery(async function () {
 
     $(document).on('click', '.api_loading', () => cancelStatusCheck('Canceled because connecting was manually canceled'));
 
+    const wordLimitMenuItem = $('#option_word_limit');
+    const wordLimitLabel = $('#option_word_limit_label');
+    const wordLimitBaseLabel = t`Word limit`;
+    const wordLimitOffLabel = t`Off`;
+
+    function refreshWordLimitLabel() {
+        if (!wordLimitLabel.length) {
+            return;
+        }
+
+        const limit = getActiveWordLimit();
+        const labelText = limit ? `${wordLimitBaseLabel}: ${limit}` : `${wordLimitBaseLabel}: ${wordLimitOffLabel}`;
+        wordLimitLabel.text(labelText);
+        if (wordLimitMenuItem.length) {
+            wordLimitMenuItem.toggleClass('active', Boolean(limit));
+            wordLimitMenuItem.attr('aria-pressed', limit ? 'true' : 'false');
+        }
+    }
+
+    refreshWordLimitLabel();
+    eventSource.on(event_types.CHAT_CHANGED, refreshWordLimitLabel);
+
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
     let S_TAPreviouslyFocused = false;
     $('#send_textarea').on('focusin focus click', () => {
@@ -10145,7 +9874,7 @@ jQuery(async function () {
     });
     $(document).on('click', event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
-            var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue'];
+            var validIDs = ['options_button', 'send_but', 'mes_impersonate', 'mes_continue', 'send_textarea', 'option_regenerate', 'option_continue', 'option_word_limit'];
             if (!validIDs.includes($(event.target).attr('id'))) {
                 S_TAPreviouslyFocused = false;
             }
@@ -10369,6 +10098,15 @@ jQuery(async function () {
         $('#character_popup').css('display', 'none');
     });
 
+    // Word Limit UI handlers
+    $('#word_limit_enabled').on('change', function () {
+        const isEnabled = $(this).is(':checked');
+        $('#word_limit_controls').toggle(isEnabled);
+    });
+
+    // Initialize word limit controls visibility
+    $('#word_limit_enabled').trigger('change');
+
     $('#dialogue_popup_ok').on('click', async function (_e, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         dialogueCloseStop = false;
@@ -10472,7 +10210,6 @@ jQuery(async function () {
         '#depth_prompt_depth': function () { create_save.depth_prompt_depth = Number($('#depth_prompt_depth').val()); },
         '#depth_prompt_role': function () { create_save.depth_prompt_role = String($('#depth_prompt_role').val()); },
         // New generation settings
-        '#generation_bias_textarea': function () { create_save.generation_bias = String($('#generation_bias_textarea').val()); },
         '#response_style_select': function () { create_save.response_style = String($('#response_style_select').val()); },
         '#generation_temperature': function () { create_save.generation_temperature = parseFloat($('#generation_temperature').val()); },
         // Personality traits
@@ -10694,6 +10431,41 @@ jQuery(async function () {
 
         else if (id == 'option_delete_mes') {
             setTimeout(() => openMessageDelete(fromSlashCommand), animation_duration);
+        }
+
+        else if (id === 'option_word_limit') {
+            hideMenu();
+
+            const currentLimit = getActiveWordLimit();
+            const header = t`Word limit`;
+            const instructions = `<p>${t`Enter the maximum number of words for assistant replies.`}</p><p>${t`Leave the field empty to disable the limit.`}</p>`;
+            const defaultValue = currentLimit ? String(currentLimit) : '';
+            const value = await Popup.show.input(header, instructions, defaultValue, { okButton: t`Save`, cancelButton: t`Cancel` });
+
+            if (value === null) {
+                return;
+            }
+
+            const trimmed = value.trim();
+
+            if (!trimmed) {
+                clearActiveWordLimit();
+                refreshWordLimitLabel();
+                toastr.info(t`Word limit disabled.`);
+                return;
+            }
+
+            const parsedLimit = Number.parseInt(trimmed, 10);
+
+            if (!Number.isFinite(parsedLimit) || parsedLimit <= 0) {
+                toastr.warning(t`Please enter a positive number.`);
+                return;
+            }
+
+            setActiveWordLimit(parsedLimit);
+            refreshWordLimitLabel();
+            toastr.success(t`Word limit updated.`);
+            return;
         }
 
         else if (id == 'option_close_chat') {

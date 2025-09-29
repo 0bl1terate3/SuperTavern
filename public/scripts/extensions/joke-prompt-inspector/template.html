@@ -1,0 +1,385 @@
+<div class="joke_prompt_inspector_settings">
+    <!-- Main Toggle -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>Joke Prompt Inspector</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="jokePromptInspectorEnabled">
+                    <input type="checkbox" id="jokePromptInspectorEnabled" checked>
+                    Enable Joke Prompt Inspector
+                </label>
+                <small>Automatically inject joke scaffolding into prompts</small>
+            </div>
+
+            <div class="form_group">
+                <label for="jokePromptInspectorAutoInject">
+                    <input type="checkbox" id="jokePromptInspectorAutoInject" checked>
+                    Auto-inject Scaffolding
+                </label>
+                <small>Automatically detect joke-related prompts and inject scaffolding</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Joke Scaffolding Settings -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>Joke Scaffolding</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="scaffoldingEnabled">
+                    <input type="checkbox" id="scaffoldingEnabled" checked>
+                    Enable Joke Scaffolding
+                </label>
+                <small>Enforce scaffolding: Pick topic → Pick structure → Write joke</small>
+            </div>
+
+            <div class="form_group">
+                <label for="scaffoldingEnforceStructure">
+                    <input type="checkbox" id="scaffoldingEnforceStructure" checked>
+                    Enforce Structure
+                </label>
+                <small>Force specific joke structures (one-liner, setup-punchline, etc.)</small>
+            </div>
+
+            <div class="form_group">
+                <label for="scaffoldingAutoRotate">
+                    <input type="checkbox" id="scaffoldingAutoRotate" checked>
+                    Auto-rotate Structures
+                </label>
+                <small>Automatically rotate through different joke structures</small>
+            </div>
+
+            <div class="form_group">
+                <label>Joke Structures:</label>
+                <div class="checkbox_group">
+                    <label><input type="checkbox" name="structures" value="one_liner" checked> One-liner</label>
+                    <label><input type="checkbox" name="structures" value="setup_punchline" checked>
+                        Setup-Punchline</label>
+                    <label><input type="checkbox" name="structures" value="parody" checked> Parody</label>
+                    <label><input type="checkbox" name="structures" value="dialogue" checked> Dialogue</label>
+                    <label><input type="checkbox" name="structures" value="absurdism" checked> Absurdism</label>
+                    <label><input type="checkbox" name="structures" value="wordplay" checked> Wordplay</label>
+                    <label><input type="checkbox" name="structures" value="dark_humor" checked> Dark Humor</label>
+                    <label><input type="checkbox" name="structures" value="dad_joke" checked> Dad Joke</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Topic Selection Settings -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>Topic Selection</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label for="topicSelectionEnabled">
+                    <input type="checkbox" id="topicSelectionEnabled" checked>
+                    Enable Topic Selection
+                </label>
+                <small>Automatically select topics for joke generation</small>
+            </div>
+
+            <div class="form_group">
+                <label for="topicSelectionUseMemoryTopics">
+                    <input type="checkbox" id="topicSelectionUseMemoryTopics" checked>
+                    Use Memory Topics
+                </label>
+                <small>Extract topics from chat memory and summaries</small>
+            </div>
+
+            <div class="form_group">
+                <label for="topicSelectionUseRandomTopics">
+                    <input type="checkbox" id="topicSelectionUseRandomTopics" checked>
+                    Use Random Topics
+                </label>
+                <small>Use random topics from selected pools</small>
+            </div>
+
+            <div class="form_group">
+                <label>Topic Pools:</label>
+                <div class="checkbox_group">
+                    <label><input type="checkbox" name="topicPools" value="everyday_life" checked> Everyday Life</label>
+                    <label><input type="checkbox" name="topicPools" value="pop_culture" checked> Pop Culture</label>
+                    <label><input type="checkbox" name="topicPools" value="current_events" checked> Current
+                        Events</label>
+                    <label><input type="checkbox" name="topicPools" value="absurd_scenarios" checked> Absurd
+                        Scenarios</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>Scaffolding Preview</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <label>Current Structure:</label>
+                <select id="previewStructure">
+                    <option value="one_liner">One-liner</option>
+                    <option value="setup_punchline">Setup-Punchline</option>
+                    <option value="parody">Parody</option>
+                    <option value="dialogue">Dialogue</option>
+                    <option value="absurdism">Absurdism</option>
+                    <option value="wordplay">Wordplay</option>
+                    <option value="dark_humor">Dark Humor</option>
+                    <option value="dad_joke">Dad Joke</option>
+                </select>
+            </div>
+
+            <div class="form_group">
+                <label>Preview Topic:</label>
+                <input type="text" id="previewTopic" placeholder="Enter a topic or leave blank for random"
+                    value="coffee">
+            </div>
+
+            <div class="form_group">
+                <button id="previewScaffolding" class="menu_button">
+                    <i class="fa-solid fa-eye"></i> Preview Scaffolding
+                </button>
+            </div>
+
+            <div class="form_group">
+                <label>Scaffolding Preview:</label>
+                <textarea id="scaffoldingPreview" readonly rows="8"
+                    style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <span>Quick Actions</span>
+            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="form_group">
+                <button id="testJokeScaffolding" class="menu_button">
+                    <i class="fa-solid fa-play"></i> Test Joke Scaffolding
+                </button>
+                <button id="resetStructureRotation" class="menu_button">
+                    <i class="fa-solid fa-sync"></i> Reset Structure Rotation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .joke_prompt_inspector_settings {
+        padding: 10px;
+    }
+
+    .checkbox_group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 5px;
+        margin-top: 5px;
+    }
+
+    .checkbox_group label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 12px;
+    }
+
+    .form_group {
+        margin-bottom: 15px;
+    }
+
+    .form_group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form_group small {
+        display: block;
+        color: #666;
+        font-size: 11px;
+        margin-top: 2px;
+    }
+
+    .form_group input[type="text"],
+    .form_group select,
+    .form_group textarea {
+        width: 100%;
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    #testJokeScaffolding,
+    #resetStructureRotation,
+    #previewScaffolding {
+        margin: 5px;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #f5f5f5;
+        cursor: pointer;
+    }
+
+    #testJokeScaffolding:hover,
+    #resetStructureRotation:hover,
+    #previewScaffolding:hover {
+        background: #e5e5e5;
+    }
+
+    #scaffoldingPreview {
+        background: #f8f8f8;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+    }
+</style>
+
+<script>
+    // Joke scaffolding templates
+    const JOKE_SCAFFOLDING_TEMPLATES = {
+        one_liner: `
+1. Pick a topic: {topic}
+2. Create a single, punchy joke about this topic
+3. Make it memorable and funny
+4. Keep it appropriate
+
+Generate the joke:`,
+
+        setup_punchline: `
+1. Pick a topic: {topic}
+2. Create a setup-punchline joke about this topic
+3. Setup: [situation or context]
+4. Punchline: [twist or surprise]
+5. Make it funny and unexpected
+
+Generate the joke:`,
+
+        parody: `
+1. Pick a topic: {topic}
+2. Create a parody joke about this topic
+3. Parody something well-known (song, movie, saying, etc.)
+4. Make it clever and funny
+5. Keep the original recognizable
+
+Generate the joke:`,
+
+        dialogue: `
+1. Pick a topic: {topic}
+2. Create a dialogue joke between two characters about this topic
+3. Use natural conversation
+4. Build to a funny punchline
+5. Make it engaging and humorous
+
+Generate the joke:`,
+
+        absurdism: `
+1. Pick a topic: {topic}
+2. Create an absurd, impossible scenario joke about this topic
+3. Make it hilariously ridiculous
+4. Use impossible situations
+5. Keep it creative and funny
+
+Generate the joke:`,
+
+        wordplay: `
+1. Pick a topic: {topic}
+2. Create a pun or wordplay joke about this topic
+3. Use clever language tricks
+4. Play with double meanings
+5. Make it linguistically clever
+
+Generate the joke:`,
+
+        dark_humor: `
+1. Pick a topic: {topic}
+2. Create a dark humor joke about this topic
+3. Keep it tasteful and not offensive
+4. Use dark themes cleverly
+5. Make it funny despite the darkness
+
+Generate the joke:`,
+
+        dad_joke: `
+1. Pick a topic: {topic}
+2. Create a dad joke about this topic
+3. Make it corny and wholesome
+4. Use classic dad joke structure
+5. Make it groan-worthy but endearing
+
+Generate the joke:`
+    };
+
+    // Load current settings into the form
+    document.addEventListener('DOMContentLoaded', function () {
+        const settings = extension_settings.jokePromptInspector;
+
+        // Main settings
+        document.getElementById('jokePromptInspectorEnabled').checked = settings.enabled;
+        document.getElementById('jokePromptInspectorAutoInject').checked = settings.autoInject;
+
+        // Scaffolding settings
+        document.getElementById('scaffoldingEnabled').checked = settings.scaffolding.enabled;
+        document.getElementById('scaffoldingEnforceStructure').checked = settings.scaffolding.enforceStructure;
+        document.getElementById('scaffoldingAutoRotate').checked = settings.scaffolding.autoRotate;
+
+        // Set structure checkboxes
+        settings.scaffolding.structures.forEach(structure => {
+            const checkbox = document.querySelector(`input[name="structures"][value="${structure}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+
+        // Topic selection settings
+        document.getElementById('topicSelectionEnabled').checked = settings.topicSelection.enabled;
+        document.getElementById('topicSelectionUseMemoryTopics').checked = settings.topicSelection.useMemoryTopics;
+        document.getElementById('topicSelectionUseRandomTopics').checked = settings.topicSelection.useRandomTopics;
+
+        // Set topic pool checkboxes
+        settings.topicSelection.topicPools.forEach(pool => {
+            const checkbox = document.querySelector(`input[name="topicPools"][value="${pool}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+
+        // Preview scaffolding button
+        document.getElementById('previewScaffolding').addEventListener('click', function () {
+            const structure = document.getElementById('previewStructure').value;
+            const topic = document.getElementById('previewTopic').value || 'random topic';
+            const template = JOKE_SCAFFOLDING_TEMPLATES[structure];
+            const preview = template.replace('{topic}', topic);
+            document.getElementById('scaffoldingPreview').value = preview;
+        });
+
+        // Test joke scaffolding button
+        document.getElementById('testJokeScaffolding').addEventListener('click', async function () {
+            try {
+                const { generateJokeWithScaffolding } = await import('/scripts/advanced-joke-workflows.js');
+                const joke = await generateJokeWithScaffolding('Test context');
+                toastr.success(`Generated joke: ${joke}`);
+            } catch (error) {
+                console.error('Error testing joke scaffolding:', error);
+                toastr.error('Failed to generate test joke');
+            }
+        });
+
+        // Reset structure rotation button
+        document.getElementById('resetStructureRotation').addEventListener('click', function () {
+            // This would reset the structure rotation in the main script
+            toastr.success('Structure rotation reset!');
+        });
+
+        // Initial preview
+        document.getElementById('previewScaffolding').click();
+    });
+</script>

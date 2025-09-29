@@ -3011,6 +3011,9 @@ export function initDefaultSlashCommands() {
 
     // Creative Joke Generator Commands
     registerJokeGeneratorCommands();
+
+    // Advanced Joke Workflows Commands
+    registerAdvancedJokeWorkflowCommands();
 }
 
 /**
@@ -5670,3 +5673,558 @@ sendTextarea.addEventListener('input', () => {
         sendTextarea.style.fontFamily = null;
     }
 });
+
+/**
+ * Get current character context for generation
+ * @returns {Object} Character context information
+ */
+function getCurrentCharacterContext() {
+    try {
+        // Check if we have a current character
+        if (typeof this_chid === 'undefined' || this_chid === undefined || !characters || !characters[this_chid]) {
+            console.log('🎭 No current character found, using generic context');
+            return {
+                hasCharacter: false,
+                name: 'Generic',
+                context: 'generic content and everyday situations',
+                fullContext: 'generic content and everyday situations'
+            };
+        }
+
+        const character = characters[this_chid];
+        console.log('🎭 Current character:', character.name);
+
+        let context = `Character: ${character.name}`;
+        let fullContext = `You are ${character.name}.`;
+
+        // Add character description if available
+        if (character.description && character.description.trim()) {
+            context += `\nDescription: ${character.description.trim()}`;
+            fullContext += `\n${character.description.trim()}`;
+        }
+
+        // Add personality if available
+        if (character.personality && character.personality.trim()) {
+            context += `\nPersonality: ${character.personality.trim()}`;
+            fullContext += `\nPersonality: ${character.personality.trim()}`;
+        }
+
+        // Add scenario if available
+        if (character.scenario && character.scenario.trim()) {
+            context += `\nScenario: ${character.scenario.trim()}`;
+            fullContext += `\nCurrent situation: ${character.scenario.trim()}`;
+        }
+
+        // Add system prompt if available
+        if (character.system && character.system.trim()) {
+            context += `\nSystem: ${character.system.trim()}`;
+            fullContext += `\n${character.system.trim()}`;
+        }
+
+        // Add greeting to understand character's speaking style
+        if (character.greeting && character.greeting.trim()) {
+            context += `\nSpeaking style: ${character.greeting.trim()}`;
+            fullContext += `\nSpeaking style: ${character.greeting.trim()}`;
+        }
+
+        // Add story string if available
+        if (character.story && character.story.trim()) {
+            context += `\nStory: ${character.story.trim()}`;
+            fullContext += `\nStory context: ${character.story.trim()}`;
+        }
+
+        // Add author's note if available
+        if (character.authors_note && character.authors_note.trim()) {
+            context += `\nAuthor's note: ${character.authors_note.trim()}`;
+            fullContext += `\nAuthor's note: ${character.authors_note.trim()}`;
+        }
+
+        // Add post history instructions if available
+        if (character.post_history_instructions && character.post_history_instructions.trim()) {
+            context += `\nPost history instructions: ${character.post_history_instructions.trim()}`;
+            fullContext += `\nPost history instructions: ${character.post_history_instructions.trim()}`;
+        }
+
+        // Add character tags if available
+        if (character.tags && character.tags.length > 0) {
+            context += `\nTags: ${character.tags.join(', ')}`;
+            fullContext += `\nTags: ${character.tags.join(', ')}`;
+        }
+
+        // Add current chat context if available
+        if (chat_metadata && chat_metadata.world_info) {
+            context += `\nWorld info: ${chat_metadata.world_info}`;
+            fullContext += `\nWorld info: ${chat_metadata.world_info}`;
+        }
+
+        // Add current chat title if available
+        if (chat_metadata && chat_metadata.title) {
+            context += `\nChat title: ${chat_metadata.title}`;
+            fullContext += `\nCurrent chat: ${chat_metadata.title}`;
+        }
+
+        console.log('🎭 Built character context:', context);
+        return {
+            hasCharacter: true,
+            name: character.name,
+            context: context,
+            fullContext: fullContext
+        };
+    } catch (error) {
+        console.error('🎭 Error getting character context:', error);
+        return {
+            hasCharacter: false,
+            name: 'Generic',
+            context: 'generic content and everyday situations',
+            fullContext: 'generic content and everyday situations'
+        };
+    }
+}
+
+/**
+ * Register Advanced Joke Workflow slash commands
+ */
+function registerAdvancedJokeWorkflowCommands() {
+    // Import advanced joke workflow functions
+    const advancedJokeWorkflows = {
+        generateAdvancedJoke: async (context, method) => {
+            const { generateAdvancedJoke } = await import('/scripts/advanced-joke-workflows.js');
+            return await generateAdvancedJoke(context, method);
+        },
+        generateJokeWithSteppedThinking: async (context) => {
+            const { generateJokeWithSteppedThinking } = await import('/scripts/advanced-joke-workflows.js');
+            return await generateJokeWithSteppedThinking(context);
+        },
+        generateJokeWithGuidedGenerations: async (context) => {
+            const { generateJokeWithGuidedGenerations } = await import('/scripts/advanced-joke-workflows.js');
+            return await generateJokeWithGuidedGenerations(context);
+        },
+        generateJokeWithObjective: async (context) => {
+            const { generateJokeWithObjective } = await import('/scripts/advanced-joke-workflows.js');
+            return await generateJokeWithObjective(context);
+        },
+        generateJokeWithMemory: async (context) => {
+            const { generateJokeWithMemory } = await import('/scripts/advanced-joke-workflows.js');
+            return await generateJokeWithMemory(context);
+        },
+        generateJokeWithScaffolding: async (context) => {
+            const { generateJokeWithScaffolding } = await import('/scripts/advanced-joke-workflows.js');
+            return await generateJokeWithScaffolding(context);
+        },
+        rotateTopicPool: async () => {
+            const { rotateTopicPool } = await import('/scripts/advanced-joke-workflows.js');
+            rotateTopicPool();
+            return "Topic pool rotated! 🎲";
+        },
+        getCurrentTopicPool: async () => {
+            const { getCurrentTopicPool } = await import('/scripts/advanced-joke-workflows.js');
+            return `Current topic pool: ${getCurrentTopicPool()}`;
+        },
+        getMemoryTopics: async () => {
+            const { getMemoryTopics } = await import('/scripts/advanced-joke-workflows.js');
+            const topics = getMemoryTopics();
+            return `Memory topics: ${topics.length > 0 ? topics.join(', ') : 'None'}`;
+        },
+        clearMemoryTopics: async () => {
+            const { clearMemoryTopics } = await import('/scripts/advanced-joke-workflows.js');
+            clearMemoryTopics();
+            return "Memory topics cleared! 🧹";
+        }
+    };
+
+    // /advancedjoke command - Generate joke using all advanced methods
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'advancedjoke',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Advanced joke command called!');
+
+                // Get current character context
+                const characterInfo = getCurrentCharacterContext();
+                console.log('🎭 Character info:', characterInfo);
+
+                const jokeContext = context || args?.context || '';
+                const method = args?.method || 'auto';
+
+                // Create character-aware joke prompt
+                const fullContext = characterInfo.hasCharacter
+                    ? `${characterInfo.fullContext}\n\nGenerate a joke about: ${jokeContext || 'anything'}. Make it fit the character's personality and style.`
+                    : `${jokeContext || 'anything'}`;
+                console.log('🎭 Full context for joke generation:', fullContext);
+
+                const result = await advancedJokeWorkflows.generateAdvancedJoke(fullContext, method);
+                console.log('🎭 Advanced joke result:', result);
+
+                // Send as the character if we have one, otherwise as a comment
+                if (characterInfo.hasCharacter) {
+                    console.log('🎭 About to call sendMessageAs with:', result);
+                    await sendMessageAs(args, result);
+                } else {
+                    console.log('🎭 About to call sendCommentMessage with:', result);
+                    await sendCommentMessage(args, result);
+                }
+                console.log('🎭 Message sent successfully');
+                return result;
+            } catch (error) {
+                console.error('Advanced joke error:', error);
+                const fallbackJoke = "Why did the chicken cross the road? To get to the other side! 😄";
+
+                // Send fallback as the character if we have one
+                if (characterInfo.hasCharacter) {
+                    await sendMessageAs(args, fallbackJoke);
+                } else {
+                    await sendCommentMessage(args, fallbackJoke);
+                }
+                return fallbackJoke;
+            }
+        },
+        helpString: 'Generate a joke using advanced workflows with character context. Usage: /advancedjoke [context] [method]',
+        aliases: ['ajoke', 'smartjoke']
+    }));
+
+    // /steppedjoke command - Generate joke with stepped thinking
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'steppedjoke',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Stepped joke command called!');
+
+                // Get current character context
+                const characterContext = getCurrentCharacterContext();
+                console.log('🎭 Character context:', characterContext);
+
+                const jokeContext = context || args?.context || '';
+
+                // Combine user context with character context
+                const fullContext = `${jokeContext} ${characterContext}`.trim();
+                console.log('🎭 Full context for joke generation:', fullContext);
+
+                const result = await advancedJokeWorkflows.generateJokeWithSteppedThinking(fullContext);
+                console.log('🎭 Stepped joke result:', result);
+                console.log('🎭 About to call sendCommentMessage with:', result);
+                await sendCommentMessage(args, result);
+                console.log('🎭 sendCommentMessage completed');
+                return result;
+            } catch (error) {
+                console.error('Stepped joke error:', error);
+                const fallbackJoke = "Why did the chicken cross the road? To get to the other side! 😄";
+                await sendCommentMessage(args, fallbackJoke);
+                return fallbackJoke;
+            }
+        },
+        helpString: 'Generate a joke using stepped thinking with character context. Usage: /steppedjoke [context]',
+        aliases: ['stepjoke', 'thinkjoke']
+    }));
+
+    // /guidedjoke command - Generate joke with guided generations
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'guidedjoke',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Guided joke command called!');
+
+                // Get current character context
+                const characterContext = getCurrentCharacterContext();
+                console.log('🎭 Character context:', characterContext);
+
+                const jokeContext = context || args?.context || '';
+
+                // Combine user context with character context
+                const fullContext = `${jokeContext} ${characterContext}`.trim();
+                console.log('🎭 Full context for joke generation:', fullContext);
+
+                const result = await advancedJokeWorkflows.generateJokeWithGuidedGenerations(fullContext);
+                console.log('🎭 Guided joke result:', result);
+                console.log('🎭 About to call sendCommentMessage with:', result);
+                await sendCommentMessage(args, result);
+                console.log('🎭 sendCommentMessage completed');
+                return result;
+            } catch (error) {
+                console.error('Guided joke error:', error);
+                const fallbackJoke = "Why did the chicken cross the road? To get to the other side! 😄";
+                await sendCommentMessage(args, fallbackJoke);
+                return fallbackJoke;
+            }
+        },
+        helpString: 'Generate a joke using guided generations with character context. Usage: /guidedjoke [context]',
+        aliases: ['guidejoke', 'rolejoke']
+    }));
+
+    // /objectivejoke command - Generate joke with objective-driven variations
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'objectivejoke',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Objective joke command called!');
+
+                // Get current character context
+                const characterContext = getCurrentCharacterContext();
+                console.log('🎭 Character context:', characterContext);
+
+                const jokeContext = context || args?.context || '';
+
+                // Combine user context with character context
+                const fullContext = `${jokeContext} ${characterContext}`.trim();
+                console.log('🎭 Full context for joke generation:', fullContext);
+
+                const result = await advancedJokeWorkflows.generateJokeWithObjective(fullContext);
+                console.log('🎭 Objective joke result:', result);
+                console.log('🎭 About to call sendCommentMessage with:', result);
+                await sendCommentMessage(args, result);
+                console.log('🎭 sendCommentMessage completed');
+                return result;
+            } catch (error) {
+                console.error('Objective joke error:', error);
+                const fallbackJoke = "Why did the chicken cross the road? To get to the other side! 😄";
+                await sendCommentMessage(args, fallbackJoke);
+                return fallbackJoke;
+            }
+        },
+        helpString: 'Generate a joke using objective-driven variations with character context. Usage: /objectivejoke [context]',
+        aliases: ['objjoke', 'goaljoke']
+    }));
+
+    // /memoryjoke command - Generate joke with memory integration
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'memoryjoke',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Memory joke command called!');
+
+                // Get current character context
+                const characterContext = getCurrentCharacterContext();
+                console.log('🎭 Character context:', characterContext);
+
+                const jokeContext = context || args?.context || '';
+
+                // Combine user context with character context
+                const fullContext = `${jokeContext} ${characterContext}`.trim();
+                console.log('🎭 Full context for joke generation:', fullContext);
+
+                const result = await advancedJokeWorkflows.generateJokeWithMemory(fullContext);
+                console.log('🎭 Memory joke result:', result);
+                console.log('🎭 About to call sendCommentMessage with:', result);
+                await sendCommentMessage(args, result);
+                console.log('🎭 sendCommentMessage completed');
+                return result;
+            } catch (error) {
+                console.error('Memory joke error:', error);
+                const fallbackJoke = "Why did the chicken cross the road? To get to the other side! 😄";
+                await sendCommentMessage(args, fallbackJoke);
+                return fallbackJoke;
+            }
+        },
+        helpString: 'Generate a joke using memory-integrated humor with character context. Usage: /memoryjoke [context]',
+        aliases: ['memjoke', 'brainjoke']
+    }));
+
+    // /scaffoldjoke command - Generate joke with scaffolding
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'scaffoldjoke',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Scaffold joke command called!');
+
+                // Get current character context
+                const characterContext = getCurrentCharacterContext();
+                console.log('🎭 Character context:', characterContext);
+
+                const jokeContext = context || args?.context || '';
+
+                // Combine user context with character context
+                const fullContext = `${jokeContext} ${characterContext}`.trim();
+                console.log('🎭 Full context for joke generation:', fullContext);
+
+                const result = await advancedJokeWorkflows.generateJokeWithScaffolding(fullContext);
+                console.log('🎭 Scaffold joke result:', result);
+                console.log('🎭 About to call sendCommentMessage with:', result);
+                await sendCommentMessage(args, result);
+                console.log('🎭 sendCommentMessage completed');
+                return result;
+            } catch (error) {
+                console.error('Scaffold joke error:', error);
+                const fallbackJoke = "Why did the chicken cross the road? To get to the other side! 😄";
+                await sendCommentMessage(args, fallbackJoke);
+                return fallbackJoke;
+            }
+        },
+        helpString: 'Generate a joke using joke scaffolding with character context. Usage: /scaffoldjoke [context]',
+        aliases: ['scaffjoke', 'structjoke']
+    }));
+
+    // /rotatetopic command - Rotate topic pool
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'rotatetopic',
+        callback: async () => {
+            return await advancedJokeWorkflows.rotateTopicPool();
+        },
+        helpString: 'Rotate the current topic pool for joke generation. Usage: /rotatetopic',
+        aliases: ['rotate', 'nexttopic']
+    }));
+
+    // /currenttopic command - Show current topic pool
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'currenttopic',
+        callback: async () => {
+            return await advancedJokeWorkflows.getCurrentTopicPool();
+        },
+        helpString: 'Show the current topic pool. Usage: /currenttopic',
+        aliases: ['topic', 'showtopic']
+    }));
+
+    // /memorytopics command - Show memory topics
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'memorytopics',
+        callback: async () => {
+            return await advancedJokeWorkflows.getMemoryTopics();
+        },
+        helpString: 'Show topics extracted from chat memory. Usage: /memorytopics',
+        aliases: ['memtopics', 'braintopics']
+    }));
+
+    // /clearmemory command - Clear memory topics
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'clearmemory',
+        callback: async () => {
+            return await advancedJokeWorkflows.clearMemoryTopics();
+        },
+        helpString: 'Clear all memory topics. Usage: /clearmemory',
+        aliases: ['cleartopics', 'resetmemory']
+    }));
+
+    // /testjoke command - Simple test command (removed duplicate)
+
+    // /simplejoke command - Even simpler test
+    console.log('🎭 Registering /simplejoke command...');
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'simplejoke',
+        callback: async (args) => {
+            console.log('🎭 Simple joke command called!');
+            const joke = "Simple joke: What do you call a fake noodle? An impasta! 🍝";
+            console.log('🎭 About to call sendCommentMessage with:', joke);
+            await sendCommentMessage(args, joke);
+            console.log('🎭 sendCommentMessage completed');
+            return joke;
+        },
+        helpString: 'Simple test command. Usage: /simplejoke',
+        aliases: ['simple']
+    }));
+    console.log('🎭 /simplejoke command registered successfully');
+
+    // /generate command - Character-aware content generation
+    console.log('🎭 Registering /generate command...');
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'generate',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Generate command called!');
+
+                // Get current character context
+                const characterInfo = getCurrentCharacterContext();
+                console.log('🎭 Character info:', characterInfo);
+
+                const userPrompt = context || args?.prompt || '';
+                if (!userPrompt.trim()) {
+                    await sendCommentMessage(args, "Please provide a prompt for generation. Usage: /generate [your prompt]");
+                    return "Please provide a prompt for generation.";
+                }
+
+                // Create character-aware prompt
+                const fullPrompt = characterInfo.hasCharacter
+                    ? `${characterInfo.fullContext}\n\nNow, as ${characterInfo.name}, respond to this request: ${userPrompt}\n\nRespond naturally and in character:`
+                    : userPrompt;
+
+                console.log('🎭 Full prompt for generation:', fullPrompt);
+
+                // Use generateQuietPrompt for character-aware generation
+                const result = await generateQuietPrompt({ prompt: fullPrompt });
+                console.log('🎭 Generation result:', result);
+
+                // Send the result as the character
+                if (characterInfo.hasCharacter) {
+                    await sendMessageAs(args, result);
+                } else {
+                    await sendCommentMessage(args, result);
+                }
+
+                console.log('🎭 Generation completed');
+                return result;
+            } catch (error) {
+                console.error('Generate error:', error);
+                const fallbackMessage = "I'm sorry, I couldn't generate that content right now.";
+                await sendCommentMessage(args, fallbackMessage);
+                return fallbackMessage;
+            }
+        },
+        helpString: 'Generate content as the current character. Usage: /generate [your prompt]',
+        aliases: ['gen', 'create']
+    }));
+    console.log('🎭 /generate command registered successfully');
+
+    // /respond command - Character-aware response generation
+    console.log('🎭 Registering /respond command...');
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'respond',
+        callback: async (args, context) => {
+            try {
+                console.log('🎭 Respond command called!');
+
+                // Get current character context
+                const characterInfo = getCurrentCharacterContext();
+                console.log('🎭 Character info:', characterInfo);
+
+                const userPrompt = context || args?.prompt || '';
+                if (!userPrompt.trim()) {
+                    await sendCommentMessage(args, "Please provide something to respond to. Usage: /respond [what to respond to]");
+                    return "Please provide something to respond to.";
+                }
+
+                // Create character-aware response prompt
+                const fullPrompt = characterInfo.hasCharacter
+                    ? `${characterInfo.fullContext}\n\nAs ${characterInfo.name}, respond to this: ${userPrompt}\n\nRespond naturally and in character:`
+                    : `Respond to this: ${userPrompt}`;
+
+                console.log('🎭 Full prompt for response:', fullPrompt);
+
+                // Use generateQuietPrompt for character-aware response
+                const result = await generateQuietPrompt({ prompt: fullPrompt });
+                console.log('🎭 Response result:', result);
+
+                // Send the result as the character
+                if (characterInfo.hasCharacter) {
+                    await sendMessageAs(args, result);
+                } else {
+                    await sendCommentMessage(args, result);
+                }
+
+                console.log('🎭 Response completed');
+                return result;
+            } catch (error) {
+                console.error('Respond error:', error);
+                const fallbackMessage = "I'm sorry, I couldn't respond to that right now.";
+                await sendCommentMessage(args, fallbackMessage);
+                return fallbackMessage;
+            }
+        },
+        helpString: 'Generate a response as the current character. Usage: /respond [what to respond to]',
+        aliases: ['reply', 'answer']
+    }));
+    console.log('🎭 /respond command registered successfully');
+
+    // Test with a different approach - use sendCommentMessage instead
+    console.log('🎭 Registering /testjoke command...');
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'testjoke',
+        callback: async (args) => {
+            console.log('🎭 Test joke command called!');
+            const joke = "Test joke: Why did the chicken cross the road? To get to the other side! 🐔";
+            console.log('🎭 About to call sendCommentMessage with:', joke);
+            await sendCommentMessage(args, joke);
+            console.log('🎭 sendCommentMessage completed');
+            return joke;
+        },
+        helpString: 'Test command using sendCommentMessage. Usage: /testjoke',
+        aliases: ['test']
+    }));
+    console.log('🎭 /testjoke command registered successfully');
+}

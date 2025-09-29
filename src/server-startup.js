@@ -47,6 +47,11 @@ import { router as speechRouter } from './endpoints/speech.js';
 import { router as azureRouter } from './endpoints/azure.js';
 import { router as minimaxRouter } from './endpoints/minimax.js';
 import { router as dataMaidRouter } from './endpoints/data-maid.js';
+import { router as scheduleRouter } from './endpoints/schedule.js';
+import { router as branchesRouter } from './endpoints/branches.js';
+import { router as contextCompressionRouter } from './endpoints/context-compression.js';
+import { router as relationshipsRouter } from './endpoints/relationships.js';
+import { router as advancedFeaturesRouter } from './endpoints/advanced-features.js';
 
 /**
  * @typedef {object} ServerStartupResult
@@ -175,6 +180,11 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/azure', azureRouter);
     app.use('/api/minimax', minimaxRouter);
     app.use('/api/data-maid', dataMaidRouter);
+    app.use('/api/schedule', scheduleRouter);
+    app.use('/api/branches', branchesRouter);
+    app.use('/api/context', contextCompressionRouter);
+    app.use('/api/relationships', relationshipsRouter);
+    app.use('/api/advanced', advancedFeaturesRouter);
 }
 
 /**

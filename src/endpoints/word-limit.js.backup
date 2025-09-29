@@ -1,0 +1,190 @@
+import express from 'express';
+
+export const router = express.Router();
+
+// Default word limit settings
+let defaultSettings = {
+    enabled: false,
+    maxWords: 50,
+    minWords: 1,
+    strict: true,
+    targetWords: 0,
+    tolerance: 5,
+    warningThreshold: 0.9,
+};
+
+/**
+ * Get current word limit settings
+ */
+router.get('/settings', (request, response) => {
+    try {
+        // In a real implementation, this would load from user-specific settings
+        // For now, return default settings
+        return response.json(defaultSettings);
+    } catch (error) {
+        console.error('Failed to get word limit settings:', error);
+        return response.status(500).json({ error: 'Failed to retrieve settings' });
+    }
+});
+
+/**
+ * Update word limit settings
+ */
+router.post('/settings', (request, response) => {
+    try {
+        const { enabled, maxWords, minWords, strict, targetWords, tolerance, warningThreshold } = request.body;
+
+        // Validate input
+        if (typeof enabled !== 'undefined' && typeof enabled !== 'boolean') {
+            return response.status(400).json({ error: 'enabled must be a boolean' });
+        }
+
+        if (typeof maxWords !== 'undefined' && (!Number.isInteger(maxWords) || maxWords < 1 || maxWords > 10000)) {
+            return response.status(400).json({ error: 'maxWords must be an integer between 1 and 10000' });
+        }
+
+        if (typeof minWords !== 'undefined' && (!Number.isInteger(minWords) || minWords < 1 || minWords > 1000)) {
+            return response.status(400).json({ error: 'minWords must be an integer between 1 and 1000' });
+        }
+
+        if (typeof targetWords !== 'undefined' && (!Number.isInteger(targetWords) || targetWords < 0 || targetWords > 10000)) {
+            return response.status(400).json({ error: 'targetWords must be an integer between 0 and 10000' });
+        }
+
+        if (typeof tolerance !== 'undefined' && (!Number.isInteger(tolerance) || tolerance < 0 || tolerance > 50)) {
+            return response.status(400).json({ error: 'tolerance must be an integer between 0 and 50' });
+        }
+
+        // Update settings
+        const newSettings = { ...defaultSettings };
+        
+        if (typeof enabled !== 'undefined') newSettings.enabled = enabled;
+        if (typeof maxWords !== 'undefined') newSettings.maxWords = maxWords;
+        if (typeof minWords !== 'undefined') newSettings.minWords = minWords;
+        if (typeof strict !== 'undefined') newSettings.strict = strict;
+        if (typeof targetWords !== 'undefined') newSettings.targetWords = targetWords;
+        if (typeof tolerance !== 'undefined') newSettings.tolerance = tolerance;
+        if (typeof warningThreshold !== 'undefined') newSettings.warningThreshold = warningThreshold;
+
+        defaultSettings = newSettings;
+
+        console.log('Word limit settings updated:', defaultSettings);
+        return response.json(defaultSettings);
+    } catch (error) {
+        console.error('Failed to update word limit settings:', error);
+        return response.status(500).json({ error: 'Failed to update settings' });
+    }
+});
+
+/**
+ * Apply word limit to text
+ */
+router.post('/apply', (request, response) => {
+    try {
+        const { text, settings } = request.body;
+
+        if (!text || typeof text !== 'string') {
+            return response.status(400).json({ error: 'text is required and must be a string' });
+        }
+
+        const activeSettings = settings || defaultSettings;
+
+        if (!activeSettings.enabled) {
+            return response.json({
+                originalText: text,
+                modifiedText: text,
+                originalWordCount: countWords(text),
+                finalWordCount: countWords(text),
+                truncated: false,
+                withinLimit: true
+            });
+        }
+
+        const wordCount = countWords(text);
+        const limit = activeSettings.targetWords > 0 ? activeSettings.targetWords : activeSettings.maxWords;
+        
+        let modifiedText = text;
+        let truncated = false;
+
+        // Apply word limit if strict mode is enabled
+        if (activeSettings.strict && wordCount > limit) {
+            modifiedText = truncateToWordLimit(text, limit);
+            truncated = true;
+        }
+
+        const finalWordCount = countWords(modifiedText);
+        const withinLimit = finalWordCount <= limit;
+
+        console.log(`Word limit applied: ${wordCount} → ${finalWordCount} words (limit: ${limit})`);
+
+        return response.json({
+            originalText: text,
+            modifiedText: modifiedText,
+            originalWordCount: wordCount,
+            finalWordCount: finalWordCount,
+            limit: limit,
+            truncated: truncated,
+            withinLimit: withinLimit,
+            settings: activeSettings
+        });
+    } catch (error) {
+        console.error('Failed to apply word limit:', error);
+        return response.status(500).json({ error: 'Failed to apply word limit' });
+    }
+});
+
+/**
+ * Count words in text
+ */
+function countWords(text) {
+    if (!text || typeof text !== 'string') return 0;
+    
+    // Remove extra whitespace and split by whitespace
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    return words.length;
+}
+
+/**
+ * Truncate text to exact word limit
+ */
+function truncateToWordLimit(text, wordLimit) {
+    if (!text || wordLimit <= 0) return text;
+
+    const words = text.trim().split(/\s+/);
+    if (words.length <= wordLimit) return text;
+
+    return words.slice(0, wordLimit).join(' ');
+}
+
+/**
+ * Get word limit suggestions for prompt
+ */
+router.post('/prompt-suggestion', (request, response) => {
+    try {
+        const { currentPrompt, settings } = request.body;
+        
+        if (!settings || !settings.enabled) {
+            return response.json({ suggestion: '' });
+        }
+
+        const limit = settings.targetWords > 0 ? settings.targetWords : settings.maxWords;
+        let suggestion = '';
+
+        if (settings.targetWords > 0) {
+            // Exact word count mode
+            suggestion = `\n\n[IMPORTANT: Your response must be exactly ${settings.targetWords} words. No more, no less.]`;
+        } else {
+            // Max word limit mode
+            if (settings.strict) {
+                suggestion = `\n\n[IMPORTANT: Your response must not exceed ${limit} words. Be concise and stay within this limit.]`;
+            } else {
+                suggestion = `\n\n[IMPORTANT: Keep your response around ${limit} words (±${settings.tolerance} words is acceptable).]`;
+            }
+        }
+
+        return response.json({ suggestion });
+    } catch (error) {
+        console.error('Failed to generate prompt suggestion:', error);
+        return response.status(500).json({ error: 'Failed to generate suggestion' });
+    }
+});
